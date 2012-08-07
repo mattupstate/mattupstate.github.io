@@ -65,7 +65,7 @@ Supervisor will be used to manage the uWSGI application container including star
 
 It's probably safe to say that if you're developing a Python web app you'll using a WSGI based framework. This article happens to use a very simple Flask application but this deployment method could be applied to any WSGI compatible framework. 
 
-The application that will be used is located at [http://github.com/mattupstate/anisble-tutorial](http://github.com/mattupstate/anisble-tutorial). The repository also contains the Ansible playbooks for this tutorial. Clone the repository if you would like to follow along step by step:
+The application that will be used is located at [http://github.com/mattupstate/ansible-tutorial](http://github.com/mattupstate/ansible-tutorial). The repository also contains the Ansible playbooks for this tutorial. Clone the repository if you would like to follow along step by step:
 
     $ git clone http://github.com/mattupstate/anisble-tutorial
     $ cd ansible-tutorial
@@ -289,7 +289,7 @@ This tasks installs the application's dependencies into the specified vitualenv 
     - restart app
 {% endhighlight %}
 
-This task creates or updates the application's Supervisor program configuration from a [custom template](https://github.com/mattupstate/ansible-tutorial/blob/master/devops/templates/supervisor.ini). If you look at the contents of the template you will see the previous defined variables being used. Additionally, this task defines a `notify` action. This means that if the configuration file changes at all, Anisble will run the `restart app` handler which is defined later on in the playbook.
+This task creates or updates the application's Supervisor program configuration from a [custom template](https://github.com/mattupstate/ansible-tutorial/blob/master/devops/templates/supervisor.ini). If you look at the contents of the template you will see the previous defined variables being used. Additionally, this task defines a `notify` action. This means that if the configuration file changes at all, Ansible will run the `restart app` handler which is defined later on in the playbook.
 
 {% highlight yaml %}
 - name: create nginx site config
