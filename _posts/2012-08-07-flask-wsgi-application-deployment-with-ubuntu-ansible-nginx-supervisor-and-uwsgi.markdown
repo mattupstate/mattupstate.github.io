@@ -325,8 +325,8 @@ Some of the previous tasks use Ansible's `notify` action. In the case those task
 This handler will ensure the application is restarted via supervisorctl so long as it is already running. 
 
 {% highlight yaml %}
-  - name: restart nginx
-    action: service name=nginx state=restarted
+- name: restart nginx
+  action: service name=nginx state=restarted
 {% endhighlight %}
 
 This handler will ensure Nginx is restarted so long as it is already running.
