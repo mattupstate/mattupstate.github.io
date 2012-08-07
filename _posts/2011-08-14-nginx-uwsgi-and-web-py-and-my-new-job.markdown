@@ -25,9 +25,11 @@ In this article you will learn how to use [Ansible](http://ansible.github.com) t
 3. [The Flask/WSGI Application](#application)
 4. [Server Setup](#server-setup)
 5. [Application Deployment](#application-deployment)
-6. [Further Reading](#further-reading)
+6. [Playbooks Explained](#playbooks-explained)
     * [server_setup.yml](#server_setup.yml)
     * [deploy.yml](#deploy.yml)
+7. [Notes](#notes)
+    * [Nginx Service Problems](#nginx-service-problems)
 
 ---
 ## <a id="ansible"></a>Ansible
@@ -102,7 +104,7 @@ If all goes well the application should be deployed to the server and if you acc
 
 
 ---
-## <a id="further-reading"></a>Further Reading
+## <a id="playbooks-explained"></a>Playbooks Explained
 
 This section explains each playbook in detail.
 
@@ -328,3 +330,10 @@ This handler will ensure the application is restarted via supervisorctl so long 
 {% endhighlight %}
 
 This handler will ensure Nginx is restarted so long as it is already running.
+
+---
+##<a id="notes"></a>Notes
+
+###<a id="nginx-service-problems"></a>Nginx Service Problems
+
+At the time of writing this tutorial there was a small problem with the Nginx PPA and the init script that was packaged with it. Luckily a [bug was filed](https://bugs.launchpad.net/nginx/+bug/1033856) at Launchpad so I figured out what was going on. If you experience this problem simply replace the contents of the `/etc/init.d/nginx` file with this [alternative init script](https://launchpadlibrarian.net/112190683/nginx.txt).
