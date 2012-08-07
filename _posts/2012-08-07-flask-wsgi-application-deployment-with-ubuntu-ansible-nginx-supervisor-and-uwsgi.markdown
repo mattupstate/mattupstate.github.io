@@ -1,6 +1,6 @@
 ---
 comments: true
-date: 2012-08-7 21:16:55
+date: 2012-08-07 21:16:55
 layout: post
 slug: flask-wsgi-application-deployment-with-ubuntu-ansible-nginx-supervisor-and-uwsgi
 title: Flask/WSGI Application Deployment with Ubuntu, Ansible, Nginx, Supervisor and uWSGI
