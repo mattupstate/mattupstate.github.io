@@ -38,7 +38,7 @@ Ansible is a great devops tool. It's truly simply to understand and is easily ex
 
 This tutorial makes use of a few modules that are, as of writing this, not part of Ansible's core. Since we're dealing with Python app development I wrote a few modules to that made common commands, actions and configurations a bit easier. Download these modules and ensure they are in your Ansible's library path:
 
-* [apt_repository](https://raw.github.com/mattupstate/ansible/devel/library/easy_install)
+* [apt_repository](https://raw.github.com/mattupstate/ansible/devel/library/apt_repository)
 * [easy_install](https://raw.github.com/mattupstate/ansible/devel/library/easy_install)
 * [pip](https://raw.github.com/mattupstate/ansible/devel/library/pip)
 * [supervisorctl](https://raw.github.com/mattupstate/ansible/devel/library/supervisorctl)
