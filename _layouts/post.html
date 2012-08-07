@@ -2,7 +2,8 @@
 layout: base
 ---
 <div class="page-header">
-  <h2>{{ page.title }}</h2>
+  <p class="post-date">{{ page.date | date: '%B' }} {{ page.date | date: '%e' }}, {{ page.date | date: '%Y' }}</p>
+  <h2 class="post-title">{{ page.title }}</h2>
 </div>
 <div class="row">
   <div class="span-12">

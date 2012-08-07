@@ -1,3 +1,16 @@
+.posts {
+    margin-bottom: 50px;
+}
+
+.post-title {
+    line-height: 30px;
+    margin-bottom: 5px;
+}
+
+.post-date {
+    font-style: italic;
+}
+
 .comments {
     margin: 50px 0 0 0;
     padding-top: 50px;

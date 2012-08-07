@@ -1,9 +1,17 @@
 ---
 layout: page
-title: Latest Posts
 ---
-{% for post in site.posts %}
-<h2><a href="{{ post.url }}" rel="bookmark" title="Permanent link to ">{{ post.title }}</a></h2>
-<span>{{ post.date | date: '%B' }} {{ post.date | date: '%e' }}, {{ post.date | date: '%Y' }}</span>
-<p>{{ post.excerpt }}</p>
-{% endfor %}
+<div class="page-header">
+  <h2>Latest Posts</h2>
+</div>
+
+<div class="row posts">
+  <div class="span-12">
+    {% for post in site.posts %}
+    <div class="post">
+      <p class="post-date">{{ post.date | date: '%B' }} {{ post.date | date: '%e' }}, {{ post.date | date: '%Y' }}</p>
+      <h2 class="post-title"><a href="{{ post.url }}" rel="bookmark" title="Permanent link to ">{{ post.title }}</a></h2>
+    </div>
+    {% endfor %}
+  </div>
+</div>
