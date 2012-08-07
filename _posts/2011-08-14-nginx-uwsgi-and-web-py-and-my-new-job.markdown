@@ -18,7 +18,7 @@ tags:
 
 In this article you will learn how to use [Ansible](http://ansible.github.com) to deploy an arbitrary WSGI app, in this case a [Flask](http://flask.pocoo.org) app, to an Ubuntu server that runs [Nginx](http://wiki.nginx.org/), [uWSGI](http://projects.unbit.it/uwsgi/), and [Supervisor](http://supervisord.org/). This article assumes you have a basic understanding of Ubuntu, Python web application development and are using git for source control.
 
-**Contents:**
+##Contents
 
 1. [Ansible](#ansible)
 2. [Server Software](#server-software)
