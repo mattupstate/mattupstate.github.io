@@ -67,7 +67,7 @@ It's probably safe to say that if you're developing a Python web app you'll usin
 
 The application that will be used is located at [http://github.com/mattupstate/ansible-tutorial](http://github.com/mattupstate/ansible-tutorial). The repository also contains the Ansible playbooks for this tutorial. Clone the repository if you would like to follow along step by step:
 
-    $ git clone http://github.com/mattupstate/anisble-tutorial
+    $ git clone http://github.com/mattupstate/ansible-tutorial
     $ cd ansible-tutorial
 
 
