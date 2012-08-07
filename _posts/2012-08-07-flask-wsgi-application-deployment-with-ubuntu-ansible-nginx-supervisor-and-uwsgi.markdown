@@ -212,7 +212,7 @@ Following this are some tasks related to **Supervisor**:
   action: template src=templates/supervisord.sh dest=/etc/init.d/supervisord mode=0755
 
 - name: start supervisord service and have it run during system startup
-    action: service name=supervisord state=started enabled=yes
+  action: service name=supervisord state=started enabled=yes
 {% endhighlight %}
 
 The first task creates a directory to contain various program configurations. Following this a Supervisor configuration file is created from the [custom template](https://github.com/mattupstate/ansible-tutorial/blob/master/devops/templates/supervisord.conf) which will load all files located in the aforementioned directory. The third and fourth tasks setup Supervisor to run as a service and run when the system starts up.

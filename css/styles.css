@@ -4,7 +4,7 @@
 
 .post-title {
     line-height: 30px;
-    margin-bottom: 5px;
+    margin-bottom: 30px;
 }
 
 .post-date {
@@ -12,12 +12,17 @@
 }
 
 .comments {
-    margin: 50px 0 0 0;
+    margin-top: 50px;
     padding-top: 50px;
     border-top: 1px solid #E5E5E5;
+}
+
+.navbar .github li {
+    margin: 10px 0 0 0;
 }
 
 footer {
     padding-top: 30px;
     border-top: 1px solid #E5E5E5;
+    text-align: center;
 }

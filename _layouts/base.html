@@ -32,7 +32,17 @@
     <![endif]-->
     <div class="container">
       <header>
-        <h1><a href="/">Matt Wright</a></h1>
+        <div class="navbar">
+          <div class="navbar-inner">
+            <div class="container">
+              <a href="/" class="brand">Matt Wright</a>
+              <ul class="nav pull-right">
+                <li{% if page.is_index %} class="active"{% endif %}><a href="/">Posts</a></li>
+                <li><a href="http://github.com/mattupstate">Projects</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </header>
 
       {{ content }}

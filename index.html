@@ -1,12 +1,11 @@
 ---
 layout: page
+is_index: true
 ---
-<div class="page-header">
-  <h2>Latest Posts</h2>
-</div>
 
 <div class="row posts">
-  <div class="span-12">
+  <div class="span1">&nbsp;</div>
+  <div class="span10">
     {% for post in site.posts %}
     <div class="post">
       <p class="post-date">{{ post.date | date: '%B' }} {{ post.date | date: '%e' }}, {{ post.date | date: '%Y' }}</p>
