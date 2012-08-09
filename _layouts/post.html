@@ -2,8 +2,7 @@
 layout: base
 ---
 <div class="row">
-  <div class="span1">&nbsp;</div>
-  <div class="span10">
+  <div class="span10 offset1">
     <p class="post-date">{{ page.date | date: '%B' }} {{ page.date | date: '%e' }}, {{ page.date | date: '%Y' }}</p>
     <h2 class="post-title">{{ page.title }}</h2>
     {{ content }}
@@ -12,8 +11,7 @@ layout: base
 
 {% if site.related_posts.length > 0 %}
 <div class="row">
-  <div class="span1">&nbsp;</div>
-  <div class="span10">
+  <div class="span10 offset1">
     <h3>Related posts</h3>
     <ul>
     {% for related in site.related_posts limit:3 %}
@@ -21,13 +19,13 @@ layout: base
     {% endfor %}
     </ul>
   </div>
+
 </div>
 {% endif %}
 
 {% if page.comments %}
-<div class="row comments">
-  <div class="span1">&nbsp;</div>
-  <div class="span10">
+<div class="row">
+  <div class="span10 offset1 comments">
     <div id="disqus_thread"></div>
     <script type="text/javascript">
         /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */

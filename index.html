@@ -3,9 +3,8 @@ layout: page
 is_index: true
 ---
 
-<div class="row posts">
-  <div class="span1">&nbsp;</div>
-  <div class="span10">
+<div class="home page row">
+  <div class="span10 offset1">
     {% for post in site.posts %}
     <div class="post">
       <p class="post-date">{{ post.date | date: '%B' }} {{ post.date | date: '%e' }}, {{ post.date | date: '%Y' }}</p>

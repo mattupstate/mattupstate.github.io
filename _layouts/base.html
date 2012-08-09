@@ -38,8 +38,7 @@
               <a href="/" class="brand">Matt Wright</a>
               <ul class="nav pull-right">
                 <li{% if page.is_index %} class="active"{% endif %}><a href="/">Articles</a></li>
-                <li><a href="http://github.com/mattupstate">GitHub</a></li>
-                <li><a href="http://twitter.com/mattupstate">Twitter</a></li>
+                <li><a href="/about.html">Who?</a></li>
               </ul>
             </div>
           </div>
@@ -49,7 +48,17 @@
       {{ content }}
 
       <footer>
-        <p>Copyright &copy; 2012 Matt Wright</p>
+        <div class="row">
+          <div class="span12">
+            <ul class="gittip">
+              <li><strong>Fund me on Gittip:</strong></li>
+              <li><iframe style="border:0;margin:0;padding:0;" src="https://www.gittip.com/mattupstate/widget.html" width="48pt" height="20pt"></iframe></li>
+            </ul>
+          </div>
+          <div class="span12">
+            <p>Copyright &copy; 2012 Matt Wright</p>
+          </div>
+        </div>
       </footer>
     </div>
 
