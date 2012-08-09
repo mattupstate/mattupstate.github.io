@@ -36,6 +36,8 @@ In this article you will learn how to use [Ansible](http://ansible.github.com) t
 
 Ansible is a great devops tool. It's truly simply to understand and is easily extended with custom functionality that can be written in nearly any language. If you have not installed Ansible yet, please do by following the instructions on the [Getting Started](http://ansible.github.com/gettingstarted.html) page.
 
+This tutorial will make use of a few modules I contributed to Ansible. They include `apt_repository`, `easy_install`, `pip`, and `supervisorctl`.
+
 
 ---
 ## <a id="server-software"></a>Server Software
