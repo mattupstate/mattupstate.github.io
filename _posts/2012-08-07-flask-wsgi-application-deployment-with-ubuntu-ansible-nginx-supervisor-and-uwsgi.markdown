@@ -36,13 +36,6 @@ In this article you will learn how to use [Ansible](http://ansible.github.com) t
 
 Ansible is a great devops tool. It's truly simply to understand and is easily extended with custom functionality that can be written in nearly any language. If you have not installed Ansible yet, please do by following the instructions on the [Getting Started](http://ansible.github.com/gettingstarted.html) page.
 
-This tutorial makes use of a few modules that are, as of writing this, not part of Ansible's core. Since we're dealing with Python app development I wrote a few modules to that made common commands, actions and configurations a bit easier. Download these modules and ensure they are in your Ansible's library path:
-
-* [apt_repository](https://github.com/mattupstate/ansible/blob/apt_repository/library/apt_repository)
-* [easy_install](https://github.com/mattupstate/ansible/blob/easy_install/library/easy_install)
-* [pip](https://github.com/mattupstate/ansible/blob/pip/library/pip)
-* [supervisorctl](https://github.com/mattupstate/ansible/blob/supervisorctl/library/supervisorctl)
-
 
 ---
 ## <a id="server-software"></a>Server Software
