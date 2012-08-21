@@ -73,7 +73,7 @@ Before following along with this section of the tutorial you may want to have a 
 
 Create a copy of the `devops/hosts.example` file and make sure its located at `devops/hosts`. Replace the current host name with the host name of your Ubuntu server.
 
-    $ cp devops/hosts.example devops/hosts
+    $ sed "s/something.com/<your.host.name>/g" devops/hosts >> devops/hosts
 
 With the server/host is defined you can run the [server_setup.yml](https://github.com/mattupstate/ansible-tutorial/blob/master/devops/setup_server.yml) playbook against it. Run the following Ansible command:
 
