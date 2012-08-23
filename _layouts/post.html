@@ -9,9 +9,8 @@ layout: base
   </div>
 </div>
 
-{% if site.related_posts.length > 0 %}
 <div class="row">
-  <div class="span10 offset1">
+  <div class="span10 offset1 related-posts">
     <h3>Related posts</h3>
     <ul>
     {% for related in site.related_posts limit:3 %}
@@ -21,7 +20,6 @@ layout: base
   </div>
 
 </div>
-{% endif %}
 
 {% if page.comments %}
 <div class="row">
