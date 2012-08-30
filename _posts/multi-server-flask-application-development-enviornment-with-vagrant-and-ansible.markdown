@@ -2,8 +2,8 @@
 comments: true
 date: 2012-08-30 21:16:55
 layout: post
-slug: how-to-setup-a-local-development-environment-with-vagrant-and-ansible-for-a-flask-application
-title: How to Setup a Local Development Environment with Vagrant and Ansible for a Flask Application
+slug: multi-server-flask-application-development-environment-with-vagrant-and-ansible
+title: Multi Server Flask Application Development Environment with Vagrant and Ansible
 categories:
 - python
 - devops
