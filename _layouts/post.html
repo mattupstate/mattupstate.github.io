@@ -14,7 +14,7 @@ layout: base
     <h3>Related posts</h3>
     <ul>
     {% for related in site.related_posts limit:3 %}
-      <li><a href="{{ related.url }}/">{{ related.title }}</a></li>
+      <li><a href="{{ related.url }}">{{ related.title }}</a></li>
     {% endfor %}
     </ul>
   </div>
