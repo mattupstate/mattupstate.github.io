@@ -47,7 +47,7 @@ socket.on("tail-message", function(data) {
 });
 {% endhighlight %}
 
-In the previous snippet a connection object is configured with a connection to the `tail` namespace. This is follwed by sending a `subscribe` message to the server. This notifies the server that this particular client should receive messages from the `tail` namespace. Namespaces are a feature of Socket.IO that allow a developer to group messages. More on this later. Lastly, the client defines a handler function to receive `tail-message` messages. These messages are then appended as text to a DOM element.
+In the previous snippet a connection object is configured with a connection to the `tail` namespace. This is followed by sending a `subscribe` message to the server. This notifies the server that this particular client should receive messages from the `tail` namespace. Namespaces are a feature of Socket.IO that allow a developer to group messages. More on this later. Lastly, the client defines a handler function to receive `tail-message` messages. These messages are then appended as text to a DOM element.
 
 
 ---
