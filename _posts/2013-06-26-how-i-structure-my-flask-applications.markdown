@@ -1,6 +1,6 @@
 ---
 comments: true
-date: 2013-26-04 21:16:55
+date: 2013-06-26 21:16:55
 layout: post
 slug: how-i-structure-my-flask-applications
 title: How I Structure My Flask Applications
@@ -15,7 +15,7 @@ tags:
 
 [Flask](http://flask.pocoo.org) has been my preferred web framework as of late. I think it has a great core feature set and Armin, the main author, has done well to keep it's API minimal and easy to digest even for developers that are relatively new to Python. However, given that it is a rather minimal framework, it can be often difficult to decide on how to structure an application after it reaches a certain level of complexity. It tends to be a common question that comes up in the #pocoo IRC channel.
 
-In this article I intend to share how I structure Flask applications. To help support this article I've written a very basic application that I've arbitrarily named [Overholt](https://github.com/mattupstate/overholt). If you plan on following along I recommend having the [source code](https://github.com/mattupstate/overholt) open in your browser or a code editor. 
+In this article I intend to share how I structure Flask applications. To help support this article I've written a very basic application that I've arbitrarily named [Overholt](https://github.com/mattupstate/overholt). If you plan on following along I recommend having the [source code](https://github.com/mattupstate/overholt) open in your browser or a code editor.
 
 ---
 
@@ -79,7 +79,7 @@ Blueprints are crucial to my Flask applications as they allow me to group relate
 
 ### <a id="s2c"></a>Services
 
-Services are how I follow my third high level concept: *"Application logic is structured in logical packages and exposes an API of its own"*. They are responsible for connecting and interacting with any external data sources. External data sources include (but are not limited to) such things as the application database, Amazon's S3 service, or an external RESTful API. In general each logical area of functionality (products, stores, and users) contains one or more services depending on the required functionality. Within the Overholt source code you will find a [base class](https://github.com/mattupstate/overholt/tree/master/overholt/core.py#L35-L151) for services that manage a specific SQLAlchemy model. Furthermore, this base class is extended and additional methods are added to expose an API that supports the required functionality. The best example of this is the `overholt.stores.StoresService` class ([ref](https://github.com/mattupstate/overholt/tree/master/overholt/stores/__init__.py#L13-L38)). Instances of service classes can instantiated at will, but as as a convenience instances are consolidated into the `overholt.services` ([ref](https://github.com/mattupstate/overholt/tree/master/overholt/services.py)) module. 
+Services are how I follow my third high level concept: *"Application logic is structured in logical packages and exposes an API of its own"*. They are responsible for connecting and interacting with any external data sources. External data sources include (but are not limited to) such things as the application database, Amazon's S3 service, or an external RESTful API. In general each logical area of functionality (products, stores, and users) contains one or more services depending on the required functionality. Within the Overholt source code you will find a [base class](https://github.com/mattupstate/overholt/tree/master/overholt/core.py#L35-L151) for services that manage a specific SQLAlchemy model. Furthermore, this base class is extended and additional methods are added to expose an API that supports the required functionality. The best example of this is the `overholt.stores.StoresService` class ([ref](https://github.com/mattupstate/overholt/tree/master/overholt/stores/__init__.py#L13-L38)). Instances of service classes can instantiated at will, but as as a convenience instances are consolidated into the `overholt.services` ([ref](https://github.com/mattupstate/overholt/tree/master/overholt/services.py)) module.
 
 ### <a id="s2d"></a>API Errors/Exceptions
 
@@ -126,17 +126,17 @@ I use this library the least but it still comes in handy from time to time. This
 
 ### <a id="s3b"></a>Structure
 
-Without exception my Flask projects always contain a package named `tests` where all test related code is placed. In the [top level](https://github.com/mattupstate/overholt/tree/master/tests/__init__.py) of the `test` package you will see a few base classes for test cases. Base classes are extremely useful for testing because there is inevitably always repeated code in tests. 
+Without exception my Flask projects always contain a package named `tests` where all test related code is placed. In the [top level](https://github.com/mattupstate/overholt/tree/master/tests/__init__.py) of the `test` package you will see a few base classes for test cases. Base classes are extremely useful for testing because there is inevitably always repeated code in tests.
 
 There are also a few modules in this package. One being `tests.settings` ([ref](https://github.com/mattupstate/overholt/tree/master/tests/settings.py)) which is a testing specific configuration module. This module is passed to each application's factory method to override any default settings. The `tests.factories` ([ref](https://github.com/mattupstate/overholt/tree/master/tests/factories.py)) module contains factory classes which utilize the aforementioned **factory_boy** library. Lastly you'll find the `tests.utils` ([ref](https://github.com/mattupstate/overholt/tree/master/tests/)) module. This module will hold all reusable test utilities. For now it contains a simply function to generate a basic HTTP auth header and a test case mixin class that has many useful assertion and request methods.
 
-Also within the top level `tests` package are two other packages, `tests.api` ([ref](https://github.com/mattupstate/overholt/tree/master/tests/api)) and `tests.frontend` ([ref](https://github.com/mattupstate/overholt/tree/master/tests/frontend)) which map to the two applications that are part of Overholt. Within the top level of each package is another base class which inherits from `tests.OverholtAppTestCase`. This class can then be modified to add common testing code for the respective application. Each application then has a varying amount of test modules that group the testing of endpoints. For instance, the `tests.api.product_tests` ([ref](https://github.com/mattupstate/overholt/tree/master/tests/api/product_tests.py)) module contains the `ProductApiTestCase` class which tests all the product related endpoints of the API application. 
+Also within the top level `tests` package are two other packages, `tests.api` ([ref](https://github.com/mattupstate/overholt/tree/master/tests/api)) and `tests.frontend` ([ref](https://github.com/mattupstate/overholt/tree/master/tests/frontend)) which map to the two applications that are part of Overholt. Within the top level of each package is another base class which inherits from `tests.OverholtAppTestCase`. This class can then be modified to add common testing code for the respective application. Each application then has a varying amount of test modules that group the testing of endpoints. For instance, the `tests.api.product_tests` ([ref](https://github.com/mattupstate/overholt/tree/master/tests/api/product_tests.py)) module contains the `ProductApiTestCase` class which tests all the product related endpoints of the API application.
 
 ---
 
 ## <a id="s4"></a>Documentation
 
-The last and most commonly neglected part of any project is documentation. Sometimes you can get away with a small README file. The Overholt project happens to contain a small README file that explains how to setup the local development environment. However, README files are not necessarily sustainable as a project's complexity grows. When this is the case I always turn to [Sphinx](http://sphinx-doc.org/). 
+The last and most commonly neglected part of any project is documentation. Sometimes you can get away with a small README file. The Overholt project happens to contain a small README file that explains how to setup the local development environment. However, README files are not necessarily sustainable as a project's complexity grows. When this is the case I always turn to [Sphinx](http://sphinx-doc.org/).
 
 All documentation files reside in the `docs` [folder](https://github.com/mattupstate/overholt/tree/master/docs). These files can then be used by Sphinx to generate HTML (and other formats). There are also a lot extensions out there for Sphinx. The extension I most commonly use is [sphinxcontrib-httpdomain](http://pythonhosted.org/sphinxcontrib-httpdomain/). This extension is geared specifically for documenting HTTP APIs and even has the ability to [generate documentation](http://pythonhosted.org/sphinxcontrib-httpdomain/#module-sphinxcontrib.autohttp.flask) for a Flask application. You can see this extension in action in the [Overholt API documentation file](https://github.com/mattupstate/overholt/tree/master/docs/api.rst).
 
