@@ -37,6 +37,7 @@ In this article I intend to share how I structure Flask applications. To help su
 	- [Database Migrations](#s2h)
     - [Configuration](#s2i)
     - [Management Commands](#s2j)
+    - TODO: Frontend Assets
 3. [Testing](#s3)
     - [Tools](#s3a)
     - [Structure](#s3b)
