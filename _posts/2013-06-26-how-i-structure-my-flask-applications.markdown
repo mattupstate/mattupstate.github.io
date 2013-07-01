@@ -37,7 +37,8 @@ In this article I intend to share how I structure Flask applications. To help su
 	- [Database Migrations](#s2h)
     - [Configuration](#s2i)
     - [Management Commands](#s2j)
-    - TODO: Frontend Assets
+    - [Asyncronous Tasks](#s2k)
+    - [Frontend Assets](#s2l)
 3. [Testing](#s3)
     - [Tools](#s3a)
     - [Structure](#s3b)
@@ -111,6 +112,14 @@ Configuration is always important for an application, especially for sensitive d
 ### <a id="s2j"></a>Management Commands
 
 Management commands often come in handy when developing or managing your deployed application. The [Flask-Script](flask-script.readthedocs.org) extension makes setting up management commands pretty easy. Commands are useful in many ways such as manipulating data or managing the database. It's really up to you and your application's needs. [Overholt contains](https://github.com/mattupstate/overholt/blob/master/manage.py) a simple `manage.py` module at the top level of the project. There are three commands for managing users. As my applications grow management commands tend to as well.
+
+### <a id="s2k"></a>Asynchronous Tasks
+
+Running code asynchronously is a common way of improving the reponsivness of a web application. [Celery](http://celeryproject.org/) is, arguably, the defacto library for doing this with Python. Similar to creating Flask apps, I also use a [factory method](https://github.com/mattupstate/overholt/blob/master/overholt/factory.py#L51-L65) for creating my Celery apps. The thing to note about this factory method is that it specifies a custom task class. This custom class creates an application context before any task is run. This is necessary because task methods will most likely be using code that is shared by the web application. More specifically, a task might query or modify the database via the Flask-SQLAlchemy extension which requires an application context to be present when interacting with the database. Beyond this tasks queued from within view functions. Overholt contains just a [few example tasks](https://github.com/mattupstate/overholt/blob/master/overholt/tasks.py) to illustrate how they might be used.
+
+### <a id="s2k"></a>Frontend Assets
+
+When it comes to frontend assets I always use [webassets](http://webassets.readthedocs.org/en/latest/) in conjuction with the [Flask-Assets](http://elsdoerfer.name/docs/flask-assets/) extension. These libraries allow me to create [logical bundles of assets](https://github.com/mattupstate/overholt/blob/master/overholt/frontend/assets.py) that, once compiled and minified, offers optimized versions for web browsers to keep the download times to a minimum. When it comes time to deploy the assets there are two approaches. The first is simply to compile the assets locally and commit them to the project repository. The other is to compile the assets on the web server when the application is deployed. The first option has the advantage of not having to configure your web server with various tools (CoffeeScript, LESS, SASS, etc) to compile the assets. The second option keeps compiled files out of the project repository and could potentially prevent an error resulting from someone forgetting to compile new assets.
 
 ---
 
