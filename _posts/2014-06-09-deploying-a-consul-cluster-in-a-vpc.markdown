@@ -65,7 +65,7 @@ Please refer to the Ansible docs for [how to install](http://docs.ansible.com/in
 
 #### 2. Create the stack
 
-Create a CloudFormation stack using `template.json` via the AWS managment console or the API. When asked for the parameters be sure to enter the appropriate availability zone letters. The zones in which you can deploy subnets into is dependent on your AWS account. The deafult is `a,b,e` because that is what my account required. Additionally, remember to enter a value key pair name so that you can ssh into the bastion and Consul servers.
+Create a CloudFormation stack using [template.json](https://github.com/mattupstate/vpc-consul/blob/master/template.json) via the AWS managment console or the API. When asked for the parameters be sure to enter the appropriate availability zone letters. The zones in which you can deploy subnets into is dependent on your AWS account. The deafult is `a,b,e` because that is what my account required. Additionally, remember to enter a value key pair name so that you can ssh into the bastion and Consul servers.
 
 #### 3. Provision the bastion
 
@@ -120,6 +120,6 @@ Check that Dnsmasq is successfully forwarding DNS queries to Consul. The output 
 
 ## Wrap Up
 
-So there you have it. A perfectly working three node Consul cluster distributed across three availability zones, each in a private subnet protected from the outside world. Now when you deploy any new instances into your VPC you'll want to make sure that you install and run the Consul agent, optionally registering any services made available by those instances.
+So there you have it. A perfectly working three node Consul cluster distributed across three availability zones, each in a private subnet protected from the outside world. Now when you deploy any new instances into your VPC you'll want to make sure that you install and run the Consul agent, optionally registering any services made available by those instances. Also consider registering various health checks for the instance and services.
 
 If anyone has any ideas on how to improve this please comment below. Thanks for reading!
