@@ -71,6 +71,7 @@ Create a CloudFormation stack using `template.json` via the AWS managment consol
 
 The bastion will need to be provisioned in order to manage the Consul servers. First, get the bastion IP address from the stack's outputs and set the `BASTION_HOST_IP` environment variable:
 
+    $ git clone https://github.com/mattupstate/vpc-consul.git && cd vpc-consul
     $ export BASTION_HOST_IP=xxx.xxx.xxx.xxx
     $ ansible-playbook -i hosts provision_bastion.yaml
 
