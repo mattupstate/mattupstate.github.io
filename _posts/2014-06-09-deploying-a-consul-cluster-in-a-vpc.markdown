@@ -15,7 +15,7 @@ tags:
 - cloudformation
 ---
 
-In this article I'd like to show you how you might deploy a Consul cluster into a [Amazon Virtual Private Cloud](http://aws.amazon.com/vpc/) using a few of my favorite tools: [Troposphere](https://github.com/cloudtools/troposphere), [CloudFormation](http://aws.amazon.com/cloudformation/) and [Ansible](http://www.ansible.com/home). There's a little [Dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) thrown in for good measure.
+In this article I'd like to show you how you might deploy a Consul cluster into a [Amazon Virtual Private Cloud](http://aws.amazon.com/vpc/) using a few of my favorite tools: [Troposphere](https://github.com/cloudtools/troposphere), [CloudFormation](http://aws.amazon.com/cloudformation/) and [Ansible](http://www.ansible.com/home). There's also a little [Dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) thrown in for good measure.
 
 ---
 
