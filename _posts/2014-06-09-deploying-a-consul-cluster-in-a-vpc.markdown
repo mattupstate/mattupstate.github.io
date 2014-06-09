@@ -120,4 +120,6 @@ Check that Dnsmasq is successfully forwarding DNS queries to Consul. The output 
 
 ## Wrap Up
 
-So there you have it. A perfectly working three node Consul cluster distributed across three availability zones, each in a private subnet protected from the outside world. I'd be happy to hear from anyone about possible improvments
+So there you have it. A perfectly working three node Consul cluster distributed across three availability zones, each in a private subnet protected from the outside world. Now when you deploy any new instances into your VPC you'll want to make sure that you install and run the Consul agent, optionally registering any services made available by those instances.
+
+If anyone has any ideas on how to improve this please comment below. Thanks for reading!
