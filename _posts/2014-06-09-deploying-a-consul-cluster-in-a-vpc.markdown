@@ -17,13 +17,13 @@ tags:
 
 In this article I'd like to show you how you might deploy a Consul cluster into a [Amazon Virtual Private Cloud](http://aws.amazon.com/vpc/) using a few of my favorite tools: [Troposphere](https://github.com/cloudtools/troposphere), [CloudFormation](http://aws.amazon.com/cloudformation/) and [Ansible](http://www.ansible.com/home). There's also a little [Dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) thrown in for good measure.
 
+To support this article I have created a [repository](https://www.github.com/mattupstate/vpc-consul) with the relevant files you will need to deploy this on your own.
+
 ---
 
 ### What is Consul?
 
 But first, why would you want to do this? Well, because Consul is pretty awesome. I won't go into [all the reasons Consul is awesome](http://www.consul.io/intro/index.html), but lets just say it's got many features one might want for their infrastructure, especially when you have various services coming and going throughout various times of the day, week, month, etc.
-
-To support this article I have created a [repository](https://www.github.com/mattupstate/vpc-consul) with the relevant files you will need to deploy this on your own.
 
 ---
 
