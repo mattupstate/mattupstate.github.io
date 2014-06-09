@@ -89,7 +89,7 @@ Now you'll want to SSH into one of the Consul servers and be sure that the clust
 
     $ ssh 10.0.16.4
     $ consul members
-    consul-server-10-0-16-4  10.0.16.4:8301  alive  role=consul,dc=us-east-1,vsn=1,vsn_min=1,vsn_max=1,port=8300,bootstrap=1
+    consul-server-10-0-16-4  10.0.16.4:8301  alive  role=consul,dc=us-east-1,vsn=1,vsn_min=1,vsn_max=1,port=8300
     consul-server-10-0-48-4  10.0.48.4:8301  alive  role=consul,dc=us-east-1,vsn=1,vsn_min=1,vsn_max=1,port=8300
     consul-server-10-0-32-4  10.0.32.4:8301  alive  role=consul,dc=us-east-1,vsn=1,vsn_min=1,vsn_max=1,port=8300
 
