@@ -152,9 +152,6 @@ The ElasticSearch Service runs, not surprisingly, ElasticSearch. The service loo
         --discovery.zen.ping.multicast.enabled=false \
         --discovery.zen.ping.unicast.hosts=$UNICAST_HOSTS'
 
-    #ExecStartPost=/usr/bin/etcdctl set /skydns/internal/company/elasticsearch/%i '{"host": "${COREOS_PRIVATE_IPV4}", "port": 9200}'
-    #ExecStartPost=/usr/bin/etcdctl set /services/elasticsearch/${COREOS_PRIVATE_IPV4} '{"http_port": 9200, "transport_port": 9300}'
-
     ExecStop=/usr/bin/docker stop %p-%i
     ExecStop=/usr/bin/docker rm %p-%i
 
