@@ -84,7 +84,8 @@ To run the cluster I've decided to use two service units, one for ElasticSearch 
 
 The Discovery Sevice will act as a sort of health check for an ElasticSearch service. This is enabled with a basic bash script that sets a key for the machine in etcd if the service is available or removes the key if the service is not available. The idea here is that when additional ElasticSearch instances are deployed they can join the cluster by asking etcd for the currently deployed ElasticSearch services. The discovery service looks this:
 
-    # elasticsearch-discovery@.service
+##### elasticsearch-discovery@.service
+
     [Unit]
     Description=ElasticSearch discovery service
     BindsTo=elasticsearch@%i.service
@@ -114,7 +115,8 @@ The bash script that does the work uses `curl` to make a request to the local El
 
 The ElasticSearch Service runs, not surprisingly, ElasticSearch. The service looks like this:
 
-    # elasticsearch@.service
+##### elasticsearch@.service
+
     [Unit]
     Description=ElasticSearch service
     After=docker.service
