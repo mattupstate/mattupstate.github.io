@@ -85,6 +85,7 @@ The bastion will need to be provisioned in order to manage the Consul servers. F
 SSH into the bastion and provision the Consul servers. Turning on SSH agent forwarding is highly recommended.
 
     $ ssh ubuntu@$BASTION_HOST_IP -o ForwardAgent=yes
+    $ export ANSIBLE_HOST_KEY_CHECKING=False
     $ ansible-playbook -i hosts provision_consul.yaml
 
 #### 5. Verify the cluster
