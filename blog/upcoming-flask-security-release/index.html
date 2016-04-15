@@ -1,0 +1,124 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="http://fonts.googleapis.com/icon?family=Material+Icons">
+<link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/css/materialize.min.css" media="screen,projection">
+<link type="text/css" rel="stylesheet" href="../../static/monokai.css">
+<link type="text/css" rel="stylesheet" href="../../static/style.css"></script>
+<title>Learning by Doing and the Upcoming Flask-Security Release — mattupstate.com</title>
+<body>
+  <header>
+    <nav class="blue-grey darken-2" role="navigation">
+      <div class="nav-wrapper container">
+        <a id="logo-container" href="/" class="brand-logo">Matt Wright</a>
+        <ul class="right hide-on-med-and-down">
+          <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+        </ul>
+
+        <ul id="nav-mobile" class="side-nav">
+          <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+        </ul>
+        <a href="#" data-activates="nav-mobile" class="button-collapse">
+          <i class="material-icons">menu</i>
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <div class="container page page-blog-post">
+    
+  <h1>Learning by Doing and the Upcoming Flask-Security Release</h1>
+  <p class="meta grey-text">Published on August 23, 2012</p>
+  <p>For the past nine weeks or so my main side project has been developing <a href="https://github.com/mattupstate/flask-security/">Flask-Security</a>. Its been a fun and challenging project for me. Fun because it has helped me learn to write Python in a clean and consistent manner. Challenging because of the ongoing design process and my relative inexperience with writing Python (I only picked it up in July of 2011).</p>
+<p>When I first started working on Flask-Security I started with bits and pieces of a <a href="https://github.com/localprojects/Civil-Debate-Wall">project</a> I had completed at work. In retrospect it wasn't so pretty. The design of the initial release used some design concepts/patterns that, to my chagrin, probably overcomplicated things. For instance, it wasn't very easy to customize the model definitions. Additionally, I released the first version far too early. A few lessons were instantly learned. Regardless, I was determined to do better.</p>
+<p>I knew what I wanted to do and that was a) improve the design and b) add a load of new features. Improving the design meant I wanted to simplify the code structure and strive to be as "pythonic" as possible. Additional features were all inspired mostly by <a href="https://github.com/plataformatec/devise">Devise</a>, a bootstrapped user authentication system for Rails. But in all honesty I had no idea how I was really going to do it. It didn't stop me though. Off I went hacking away towards an unknown destination.</p>
+<p>The first thing I did was study the code base for the Devise project. This helped me get a sense of how one might implement the features I wanted, but only to a certain degree because, well, its Rails. Nonetheless I was able to apply the higher level concepts to my own code base. The new features came relatively quick but things still felt really messy.</p>
+<p>As time passed and I kept adding more tests and polishing the features as best I could given how I thought they should be implemented. I was anxious to release the new features but I also didn't want to repeat myself. Thankfully this took a lot longer than I anticipated but it turned out to be a good thing in the end. Good because I really got to know my code and started to discover patterns and ways to simplify things.</p>
+<p>Which brings me to the upcoming release of Flask-Security. I feel much better about the structure and readability of the code. I even recently removed a load of code which is always a good thing. I hope this makes contributing to the project easier for others. I also feel much better about the implementation of the  new features and being able to extend/customize them in particular scenarios.</p>
+<p>In the end I learned a lot about Python, Flask and open source software development throughout this process simply just by <strong>doing</strong> it. I don't think there's really any other way to learn. You can read all you want but until you actually fail at something you'll never truly have the knowledge or experience to prevent it in the future. That being said here is an incomplete list of things that I would tell anyone that is getting into developing open source software:</p>
+<ul>
+<li>You don't have to be an expert to try something new</li>
+<li>Avoiding failure is only possible if you've failed previously</li>
+<li>Experience in a particular matter means you can avoid known failures</li>
+<li>Get as much feedback as possible from whoever you can</li>
+<li>Consider <strong>all</strong> criticism to be helpful even if it is not apparent at first</li>
+<li>Respond to your users promptly and without insulting them</li>
+</ul>
+<p>Now go out there and write some sofware because the world needs it!</p>
+
+  
+  <div class="comments">
+<div id="disqus_thread"></div>
+<script>
+  var disqus_config = function() { this.page.identifier = "/blog/upcoming-flask-security-release"; };
+  (function() {
+    var d = document, s = d.createElement('script');
+    s.src = '//mattupstate.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+  })();
+</script>
+<noscript>
+  Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript"
+    rel="nofollow">comments powered by Disqus.</a>
+</noscript>
+</div>
+  
+
+  </div>
+
+  <footer class="page-footer blue-grey blue-grey-text text-lighten-4">
+    <div class="container">
+      <div class="row">
+        <div class="col l8 s12">
+          <h5>mattupstate.com</h5>
+          <p>
+            You're visiting the personal website of Matt Wright, a solution oriented and cross-disciplinary technologist with experience in a variety of technical and non-technical domains.
+          </p>
+        </div>
+        <div class="col l2 s6">
+          <h5>Explore</h5>
+          <ul>
+            <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+          </ul>
+        </div>
+        <div class="col l2 s6">
+          <h5>Connect</h5>
+          <ul>
+            <li><a href="https://github.com/mattupstate">GitHub</a></li>
+            <li><a href="https://www.linkedin.com/in/matthewdwright">LinkedIn</a></li>
+            <li><a href="https://twitter.com/mattupstate">Twitter</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright blue-grey darken-2">
+      <div class="container">
+        &copy; Copyright 2016 by Matt Wright.
+      </div>
+    </div>
+  </footer>
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/js/materialize.min.js"></script>
+  <script type="text/javascript" src="../../static/init.js"></script>
+</body>

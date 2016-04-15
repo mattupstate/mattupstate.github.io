@@ -1,0 +1,339 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="http://fonts.googleapis.com/icon?family=Material+Icons">
+<link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/css/materialize.min.css" media="screen,projection">
+<link type="text/css" rel="stylesheet" href="../../static/monokai.css">
+<link type="text/css" rel="stylesheet" href="../../static/style.css"></script>
+<title>Running an ElasticSearch Cluster on CoreOS — mattupstate.com</title>
+<body>
+  <header>
+    <nav class="blue-grey darken-2" role="navigation">
+      <div class="nav-wrapper container">
+        <a id="logo-container" href="/" class="brand-logo">Matt Wright</a>
+        <ul class="right hide-on-med-and-down">
+          <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+        </ul>
+
+        <ul id="nav-mobile" class="side-nav">
+          <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+        </ul>
+        <a href="#" data-activates="nav-mobile" class="button-collapse">
+          <i class="material-icons">menu</i>
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <div class="container page page-blog-post">
+    
+  <h1>Running an ElasticSearch Cluster on CoreOS</h1>
+  <p class="meta grey-text">Published on June 26, 2014</p>
+  <p>Recently I've been getting experimenting with <a href="http://www.docker.com/">Docker</a> as a build and deployment tool. During my research I stumbled onto a seemingly interesting project called <a href="https://coreos.com/">CoreOS</a>. CoreOS is a new Linux distro tailored for scheduling and deploying services across a cluster of servers. It comes packed with Docker, <a href="http://coreos.com/using-coreos/etcd/">etcd</a> (a distributed key value store), and <a href="http://coreos.com/using-coreos/clustering/">fleet</a> (a distributed init system backed by <a href="http://coreos.com/using-coreos/systemd/">systemd</a>). All really cool stuff. So I decided to check it out and see how I might deploy an <a href="http://www.elasticsearch.org/">ElasticSearch</a> cluster.</p>
+<h2>Environment</h2>
+<p>For the test environment I've used <a href="http://www.vagrantup.com">Vagrant</a> given that the CoreOS team provides up-to-date CoreOS builds as Vagrant boxes. If you'd like to follow along be sure to install Vagrant first. These are the steps I took to set my environment up:</p>
+<h5>1. Get the files:</h5>
+<div class="highlight"><pre><span></span>$ git clone https://github.com/coreos/coreos-vagrant.git
+$ <span class="nb">cd</span> coreos-vagrant
+</pre></div>
+<h5>2. Make copies of the <code>config.rb.example</code> and <code>user-data.example</code> files:</h5>
+<div class="highlight"><pre><span></span>$ cp config.rb.example config.rb
+$ cp user-data.example user-data
+</pre></div>
+<h5>3. Change the number of instances in <code>config.rb</code> to 3:</h5>
+<pre><code># config.rb
+...
+$num_instances=3
+...
+</code></pre>
+<h5>4. Set the etcd discovery URL in <code>user-data</code>:</h5>
+<pre><code>$ curl http://discovery.etcd.io/new
+&lt;discovery-url&gt;
+
+# user-data
+coreos:
+  etcd:
+    discovery: &lt;discovery-url&gt;
+...
+</code></pre>
+<h5>5. Uncomment the <code>synced_folder</code> option in <code>Vagrantfile</code>:</h5>
+<pre><code># Vagrantfile
+...
+      config.vm.synced_folder ".", "/home/core/share", id: "core", :nfs =&gt; true, :mount_options =&gt; ['nolock,vers=3,udp']
+...
+</code></pre>
+<h5>6. Start the machines:</h5>
+<pre><code>$ vagrant up
+</code></pre>
+<h5>7. Verify the cluster:</h5>
+<div class="highlight"><pre><span></span>$ vagrant ssh core-01 -- -A
+Last login: Wed Jun <span class="m">25</span> 23:57:32 <span class="m">2014</span> from 10.0.2.2
+CoreOS <span class="o">(</span>alpha<span class="o">)</span>
+core@core-01 ~ $ fleetctl list-machines
+MACHINE     IP      METADATA
+4874973d... 172.17.8.102    -
+7f0af17f... 172.17.8.103    -
+847600c0... 172.17.8.101    -
+</pre></div>
+<h2>Service Units</h2>
+<p>To run the cluster I've decided to use two service units, one for ElasticSearch itself and another to act as a "discovery" service. One instance of each service will be deployed to each machine in the cluster for a total of six service instances.</p>
+<h3>Discovery Service</h3>
+<p>The Discovery Sevice will act as a sort of health check for an ElasticSearch service. This is enabled with a basic bash script that sets a key for the machine in etcd if the service is available or removes the key if the service is not available. The idea here is that when additional ElasticSearch instances are deployed they can join the cluster by asking etcd for the currently deployed ElasticSearch services. The discovery service looks this:</p>
+<pre><code># elasticsearch-discovery@.service
+
+[Unit]
+Description=ElasticSearch discovery service
+BindsTo=elasticsearch@%i.service
+
+[Service]
+EnvironmentFile=/etc/environment
+
+ExecStart=/bin/bash -c '\
+  while true; do \
+    curl -f ${COREOS_PRIVATE_IPV4}:9200; \
+    if [ "$?" = "0" ]; then \
+      etcdctl set /services/elasticsearch/${COREOS_PRIVATE_IPV4} \'{"http_port": 9200, "transport_port": 9300}\' --ttl 60; \
+    else \
+      etcdctl rm /services/elasticsearch/${COREOS_PRIVATE_IPV4}; \
+    fi; \
+    sleep 45; \
+  done'
+
+ExecStop=/usr/bin/etcdctl rm /services/elasticsearch/${COREOS_PRIVATE_IPV4}
+
+[X-Fleet]
+X-ConditionMachineOf=elasticsearch@%i.service
+</code></pre>
+<p>The bash script that does the work uses <code>curl</code> to make a request to the local ElasticSearch service running on port 9200. Passing the <code>-f</code> flag to <code>curl</code> allows one to get a more meaningful exit code and in this case it is used as the conditional to set or remove the key in etcd. Take note of the <code>BindsTo=</code> directive. This tells <code>systemd</code> that this service should be started only when the corresponding ElasticSearch service is started. Additionally, I've specified that this service should be deployed to the same machine as the corresponding ElasticSearch service with the <code>X-ConditionMachineOf=</code> directive.</p>
+<h3>ElasticSearch Service</h3>
+<p>The ElasticSearch Service runs, not surprisingly, ElasticSearch. The service looks like this:</p>
+<pre><code># elasticsearch@.service
+
+[Unit]
+Description=ElasticSearch service
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutSec=180
+EnvironmentFile=/etc/environment
+
+ExecStartPre=/usr/bin/mkdir -p /data/elasticsearch
+ExecStartPre=/usr/bin/docker pull dockerfile/elasticsearch
+
+ExecStart=/bin/bash -c '\
+  curl -f ${COREOS_PRIVATE_IPV4}:4001/v2/keys/services/elasticsearch; \
+  if [ "$?" = "0" ]; then \
+      UNICAST_HOSTS=$(etcdctl ls --recursive /services/elasticsearch \
+                      | sed "s/\/services\/elasticsearch\///g" \
+                      | sed "s/$/:9300/" \
+                      | paste -s -d","); \
+  else \
+      UNICAST_HOSTS=""; \
+  fi; \
+  /usr/bin/docker run \
+    --name %p-%i \
+    --publish 9200:9200 \
+    --publish 9300:9300 \
+    --volume /data/elasticsearch:/data \
+    dockerfile/elasticsearch \
+    /elasticsearch/bin/elasticsearch \
+    --node.name=%p-%i \
+    --cluster.name=logstash \
+    --network.publish_host=${COREOS_PRIVATE_IPV4} \
+    --discovery.zen.ping.multicast.enabled=false \
+    --discovery.zen.ping.unicast.hosts=$UNICAST_HOSTS'
+
+ExecStop=/usr/bin/docker stop %p-%i
+ExecStop=/usr/bin/docker rm %p-%i
+
+[X-Fleet]
+X-Conflicts=%p@*.service
+</code></pre>
+<p>First note that a directory is created in a <code>ExecStartPre=</code> directive on the host machine to store the ElasticSearch data. This is then mounted to the Docker container and allows the ElasticSearch data to survive service restarts. Next of note is the bash script that starts ElasticSearch. In this script a variable is conditionally set to a comma separated list of IP and port pairs for the currently running ElasticSearch services. This variable is then used to configure the service's unicast hosts option so that the new service will join the cluster. Unicast is used here because multicast is not supported in a Docker environment. Lastly, the <code>X-Conflicts=</code> directive ensures that there will be but one ElasticSearch service per machine in the cluster.</p>
+<h2>Deploying</h2>
+<p>Deploying the services is done with the <code>fleetctl</code> command line tool. It is a good idea to first deploy the Discovery Service so that it will automatically be started when the ElasticSearch Service is deployed. First, make sure you have ssh'd into one of the machines and using the synced folder as your working directory:</p>
+<div class="highlight"><pre><span></span>$ vagrant ssh core-01 -- -A
+Last login: Wed Jun <span class="m">25</span> 23:57:32 <span class="m">2014</span> from 10.0.2.2
+CoreOS <span class="o">(</span>alpha<span class="o">)</span>
+core@core-01 ~ $ <span class="nb">cd</span> share
+</pre></div>
+<p>The next step is to "submit" the Discovery Service to <code>fleet</code> so that it is ready and waiting for the upcoming ElasticSearch services to be deployed:</p>
+<div class="highlight"><pre><span></span>core@core-01 ~/share $ fleetctl submit elasticsearch-discovery@<span class="o">{</span>1,2,3<span class="o">}</span>.service
+</pre></div>
+<p>Now its time to start and wait for at least one ElasticSearch service to be deployed:</p>
+<div class="highlight"><pre><span></span>core@core-01 ~/share $ fleetctl start elasticsearch@1.service
+Job elasticsearch@1.service launched on 7f0af17f.../172.17.8.103
+</pre></div>
+<p>This first time this is deployed it can take a little while since Docker will have to pull the <code>dockerfile/elasticsearch</code> image from the public registry the first time. Normally <code>systemd</code> would timeout, but I've added a <code>TimeoutSec=</code> directive to the service unit to allow for this condition. If you want to watch the progress of this first service as it starts up you can tail the logs by running the <code>fleetctl journal</code> command. You should see something like this:</p>
+<div class="highlight"><pre><span></span>core@core-01 ~/share $ fleetctl journal -f elasticsearch@1.service
+-- Logs begin at Wed 2014-06-25 18:03:29 UTC. --
+Jun <span class="m">26</span> 03:08:57 core-03 systemd<span class="o">[</span>1<span class="o">]</span>: Starting ElasticSearch service...
+Jun <span class="m">26</span> 03:08:57 core-03 docker<span class="o">[</span>31109<span class="o">]</span>: Pulling repository dockerfile/elasticsearch
+Jun <span class="m">26</span> 03:09:01 core-03 docker<span class="o">[</span>31136<span class="o">]</span>: Pulling repository dockerfile/elasticsearch
+Jun <span class="m">26</span> 03:09:04 core-03 systemd<span class="o">[</span>1<span class="o">]</span>: Started ElasticSearch service.
+Jun <span class="m">26</span> 03:09:04 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+Jun <span class="m">26</span> 03:09:04 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: Dload  Upload   Total   Spent    Left  Speed
+Jun <span class="m">26</span> 03:09:04 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: <span class="o">[</span>155B blob data<span class="o">]</span>
+Jun <span class="m">26</span> 03:09:06 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: <span class="o">{</span><span class="s2">&quot;action&quot;</span>:<span class="s2">&quot;get&quot;</span>,<span class="s2">&quot;node&quot;</span>:<span class="o">{</span><span class="s2">&quot;key&quot;</span>:<span class="s2">&quot;/services/elasticsearch&quot;</span>,<span class="s2">&quot;dir&quot;</span>:true,<span class="s2">&quot;modifiedIndex&quot;</span>:493,<span class="s2">&quot;createdIndex&quot;</span>:493<span class="o">}}[</span>2014-06-26 03:09:06,159<span class="o">][</span>INFO <span class="o">][</span>node                     <span class="o">]</span> <span class="o">[</span>elasticsearch-1<span class="o">]</span> version<span class="o">[</span>1.2.1<span class="o">]</span>, pid<span class="o">[</span>1<span class="o">]</span>, build<span class="o">[</span>6c95b75/2014-06-03T15:02:52Z<span class="o">]</span>
+Jun <span class="m">26</span> 03:09:06 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:09:06,160<span class="o">][</span>INFO <span class="o">][</span>node                     <span class="o">]</span> <span class="o">[</span>elasticsearch-1<span class="o">]</span> initializing ...
+Jun <span class="m">26</span> 03:09:06 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:09:06,167<span class="o">][</span>INFO <span class="o">][</span>plugins                  <span class="o">]</span> <span class="o">[</span>elasticsearch-1<span class="o">]</span> loaded <span class="o">[]</span>, sites <span class="o">[]</span>
+Jun <span class="m">26</span> 03:09:09 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:09:09,432<span class="o">][</span>INFO <span class="o">][</span>node                     <span class="o">]</span> <span class="o">[</span>elasticsearch-1<span class="o">]</span> initialized
+Jun <span class="m">26</span> 03:09:09 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:09:09,433<span class="o">][</span>INFO <span class="o">][</span>node                     <span class="o">]</span> <span class="o">[</span>elasticsearch-1<span class="o">]</span> starting ...
+Jun <span class="m">26</span> 03:09:09 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:09:09,521<span class="o">][</span>INFO <span class="o">][</span>transport                <span class="o">]</span> <span class="o">[</span>elasticsearch-1<span class="o">]</span> bound_address <span class="o">{</span>inet<span class="o">[</span>/0:0:0:0:0:0:0:0:9300<span class="o">]}</span>, publish_address <span class="o">{</span>inet<span class="o">[</span>/172.17.8.103:9300<span class="o">]}</span>
+Jun <span class="m">26</span> 03:09:12 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:09:12,551<span class="o">][</span>INFO <span class="o">][</span>cluster.service          <span class="o">]</span> <span class="o">[</span>elasticsearch-1<span class="o">]</span> new_master <span class="o">[</span>elasticsearch-1<span class="o">][</span>oDMLhfaqQPupW-Kx7053Eg<span class="o">][</span>528834ab92f2<span class="o">][</span>inet<span class="o">[</span>/172.17.8.103:9300<span class="o">]]</span>, reason: zen-disco-join <span class="o">(</span>elected_as_master<span class="o">)</span>
+Jun <span class="m">26</span> 03:09:12 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:09:12,595<span class="o">][</span>INFO <span class="o">][</span>discovery                <span class="o">]</span> <span class="o">[</span>elasticsearch-1<span class="o">]</span> logstash/oDMLhfaqQPupW-Kx7053Eg
+Jun <span class="m">26</span> 03:09:12 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:09:12,627<span class="o">][</span>INFO <span class="o">][</span>http                     <span class="o">]</span> <span class="o">[</span>elasticsearch-1<span class="o">]</span> bound_address <span class="o">{</span>inet<span class="o">[</span>/0:0:0:0:0:0:0:0:9200<span class="o">]}</span>, publish_address <span class="o">{</span>inet<span class="o">[</span>/172.17.8.103:9200<span class="o">]}</span>
+Jun <span class="m">26</span> 03:09:12 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:09:12,648<span class="o">][</span>INFO <span class="o">][</span>gateway                  <span class="o">]</span> <span class="o">[</span>elasticsearch-1<span class="o">]</span> recovered <span class="o">[</span>0<span class="o">]</span> indices into cluster_state
+Jun <span class="m">26</span> 03:09:12 core-03 bash<span class="o">[</span>31144<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:09:12,649<span class="o">][</span>INFO <span class="o">][</span>node                     <span class="o">]</span> <span class="o">[</span>elasticsearch-1<span class="o">]</span> started
+</pre></div>
+<p>Once the first ElasticSearch service is up and running you can now add additional "nodes" to the cluster by running additional services:</p>
+<div class="highlight"><pre><span></span>core@core-01 ~/share fleetctl start elasticsearch@<span class="o">{</span>2,3<span class="o">}</span>.service
+Job elasticsearch@2.service launched on 847600c0.../172.17.8.101
+Job elasticsearch@3.service launched on 4874973d.../172.17.8.102
+</pre></div>
+<p>And again, tail one of the services to watch the startup progress:</p>
+<div class="highlight"><pre><span></span>core@core-01 ~/share $ fleetctl journal -f elasticsearch@2.service
+-- Logs begin at Wed 2014-06-25 18:02:30 UTC. --
+Jun <span class="m">26</span> 03:15:27 core-01 systemd<span class="o">[</span>1<span class="o">]</span>: Starting ElasticSearch service...
+Jun <span class="m">26</span> 03:15:27 core-01 docker<span class="o">[</span>31265<span class="o">]</span>: Pulling repository dockerfile/elasticsearch
+Jun <span class="m">26</span> 03:15:29 core-01 docker<span class="o">[</span>31286<span class="o">]</span>: Pulling repository dockerfile/elasticsearch
+Jun <span class="m">26</span> 03:15:32 core-01 systemd<span class="o">[</span>1<span class="o">]</span>: Started ElasticSearch service.
+Jun <span class="m">26</span> 03:15:32 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+Jun <span class="m">26</span> 03:15:32 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: Dload  Upload   Total   Spent    Left  Speed
+Jun <span class="m">26</span> 03:15:32 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: <span class="o">[</span>155B blob data<span class="o">]</span>
+Jun <span class="m">26</span> 03:15:33 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: <span class="o">{</span><span class="s2">&quot;action&quot;</span>:<span class="s2">&quot;get&quot;</span>,<span class="s2">&quot;node&quot;</span>:<span class="o">{</span><span class="s2">&quot;key&quot;</span>:<span class="s2">&quot;/services/elasticsearch&quot;</span>,<span class="s2">&quot;dir&quot;</span>:true,<span class="s2">&quot;nodes&quot;</span>:<span class="o">[{</span><span class="s2">&quot;key&quot;</span>:<span class="s2">&quot;/services/elasticsearch/172.17.8.103&quot;</span>,<span class="s2">&quot;value&quot;</span>:<span class="s2">&quot;{\&quot;http_port\&quot;: 9200, \&quot;transport_port\&quot;: 9300}&quot;</span>,<span class="s2">&quot;expiration&quot;</span>:<span class="s2">&quot;2014-06-26T03:16:10.516041728Z&quot;</span>,<span class="s2">&quot;ttl&quot;</span>:39,<span class="s2">&quot;modifiedIndex&quot;</span>:35199,<span class="s2">&quot;createdIndex&quot;</span>:35199<span class="o">}]</span>,<span class="s2">&quot;modifiedIndex&quot;</span>:493,<span class="s2">&quot;createdIndex&quot;</span>:493<span class="o">}}[</span>2014-06-26 03:15:33,505<span class="o">][</span>INFO <span class="o">][</span>node                     <span class="o">]</span> <span class="o">[</span>elasticsearch-2<span class="o">]</span> version<span class="o">[</span>1.2.1<span class="o">]</span>, pid<span class="o">[</span>1<span class="o">]</span>, build<span class="o">[</span>6c95b75/2014-06-03T15:02:52Z<span class="o">]</span>
+Jun <span class="m">26</span> 03:15:33 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:15:33,506<span class="o">][</span>INFO <span class="o">][</span>node                     <span class="o">]</span> <span class="o">[</span>elasticsearch-2<span class="o">]</span> initializing ...
+Jun <span class="m">26</span> 03:15:33 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:15:33,512<span class="o">][</span>INFO <span class="o">][</span>plugins                  <span class="o">]</span> <span class="o">[</span>elasticsearch-2<span class="o">]</span> loaded <span class="o">[]</span>, sites <span class="o">[]</span>
+Jun <span class="m">26</span> 03:15:36 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:15:36,907<span class="o">][</span>INFO <span class="o">][</span>node                     <span class="o">]</span> <span class="o">[</span>elasticsearch-2<span class="o">]</span> initialized
+Jun <span class="m">26</span> 03:15:36 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:15:36,908<span class="o">][</span>INFO <span class="o">][</span>node                     <span class="o">]</span> <span class="o">[</span>elasticsearch-2<span class="o">]</span> starting ...
+Jun <span class="m">26</span> 03:15:37 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:15:37,001<span class="o">][</span>INFO <span class="o">][</span>transport                <span class="o">]</span> <span class="o">[</span>elasticsearch-2<span class="o">]</span> bound_address <span class="o">{</span>inet<span class="o">[</span>/0:0:0:0:0:0:0:0:9300<span class="o">]}</span>, publish_address <span class="o">{</span>inet<span class="o">[</span>/172.17.8.101:9300<span class="o">]}</span>
+Jun <span class="m">26</span> 03:15:40 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:15:40,133<span class="o">][</span>INFO <span class="o">][</span>cluster.service          <span class="o">]</span> <span class="o">[</span>elasticsearch-2<span class="o">]</span> detected_master <span class="o">[</span>elasticsearch-1<span class="o">][</span>oDMLhfaqQPupW-Kx7053Eg<span class="o">][</span>528834ab92f2<span class="o">][</span>inet<span class="o">[</span>/172.17.8.103:9300<span class="o">]]</span>, added <span class="o">{[</span>elasticsearch-1<span class="o">][</span>oDMLhfaqQPupW-Kx7053Eg<span class="o">][</span>528834ab92f2<span class="o">][</span>inet<span class="o">[</span>/172.17.8.103:9300<span class="o">]]</span>,<span class="o">}</span>, reason: zen-disco-receive<span class="o">(</span>from master <span class="o">[[</span>elasticsearch-1<span class="o">][</span>oDMLhfaqQPupW-Kx7053Eg<span class="o">][</span>528834ab92f2<span class="o">][</span>inet<span class="o">[</span>/172.17.8.103:9300<span class="o">]]])</span>
+Jun <span class="m">26</span> 03:15:40 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:15:40,174<span class="o">][</span>INFO <span class="o">][</span>discovery                <span class="o">]</span> <span class="o">[</span>elasticsearch-2<span class="o">]</span> logstash/fnMFB1wMTZmNiQ96MS3cQw
+Jun <span class="m">26</span> 03:15:40 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:15:40,182<span class="o">][</span>INFO <span class="o">][</span>http                     <span class="o">]</span> <span class="o">[</span>elasticsearch-2<span class="o">]</span> bound_address <span class="o">{</span>inet<span class="o">[</span>/0:0:0:0:0:0:0:0:9200<span class="o">]}</span>, publish_address <span class="o">{</span>inet<span class="o">[</span>/172.17.8.101:9200<span class="o">]}</span>
+Jun <span class="m">26</span> 03:15:40 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:15:40,186<span class="o">][</span>INFO <span class="o">][</span>node                     <span class="o">]</span> <span class="o">[</span>elasticsearch-2<span class="o">]</span> started
+Jun <span class="m">26</span> 03:15:42 core-01 bash<span class="o">[</span>31299<span class="o">]</span>: <span class="o">[</span>2014-06-26 03:15:42,692<span class="o">][</span>INFO <span class="o">][</span>cluster.service          <span class="o">]</span> <span class="o">[</span>elasticsearch-2<span class="o">]</span> added <span class="o">{[</span>elasticsearch-3<span class="o">][</span>F5mpLliyS5m6Hl5-GI59Sg<span class="o">][</span>e72be2b7be66<span class="o">][</span>inet<span class="o">[</span>/172.17.8.102:9300<span class="o">]]</span>,<span class="o">}</span>, reason: zen-disco-receive<span class="o">(</span>from master <span class="o">[[</span>elasticsearch-1<span class="o">][</span>oDMLhfaqQPupW-Kx7053Eg<span class="o">][</span>528834ab92f2<span class="o">][</span>inet<span class="o">[</span>/172.17.8.103:9300<span class="o">]]])</span>
+</pre></div>
+<p>Notice in the log output that the new service has detected the first service as the master node! Finally, its just a good idea to verify the state of the ElasticSearch cluster with a plain old <code>curl</code> call:</p>
+<div class="highlight"><pre><span></span>core@core-01 ~/share $ curl localhost:9200/_cluster/state?pretty<span class="o">=</span><span class="nb">true</span>
+<span class="o">{</span>
+  <span class="s2">&quot;cluster_name&quot;</span> : <span class="s2">&quot;logstash&quot;</span>,
+  <span class="s2">&quot;version&quot;</span> : 5,
+  <span class="s2">&quot;master_node&quot;</span> : <span class="s2">&quot;oDMLhfaqQPupW-Kx7053Eg&quot;</span>,
+  <span class="s2">&quot;blocks&quot;</span> : <span class="o">{</span> <span class="o">}</span>,
+  <span class="s2">&quot;nodes&quot;</span> : <span class="o">{</span>
+    <span class="s2">&quot;oDMLhfaqQPupW-Kx7053Eg&quot;</span> : <span class="o">{</span>
+      <span class="s2">&quot;name&quot;</span> : <span class="s2">&quot;elasticsearch-1&quot;</span>,
+      <span class="s2">&quot;transport_address&quot;</span> : <span class="s2">&quot;inet[/172.17.8.103:9300]&quot;</span>,
+      <span class="s2">&quot;attributes&quot;</span> : <span class="o">{</span> <span class="o">}</span>
+    <span class="o">}</span>,
+    <span class="s2">&quot;fnMFB1wMTZmNiQ96MS3cQw&quot;</span> : <span class="o">{</span>
+      <span class="s2">&quot;name&quot;</span> : <span class="s2">&quot;elasticsearch-2&quot;</span>,
+      <span class="s2">&quot;transport_address&quot;</span> : <span class="s2">&quot;inet[/172.17.8.101:9300]&quot;</span>,
+      <span class="s2">&quot;attributes&quot;</span> : <span class="o">{</span> <span class="o">}</span>
+    <span class="o">}</span>,
+    <span class="s2">&quot;F5mpLliyS5m6Hl5-GI59Sg&quot;</span> : <span class="o">{</span>
+      <span class="s2">&quot;name&quot;</span> : <span class="s2">&quot;elasticsearch-3&quot;</span>,
+      <span class="s2">&quot;transport_address&quot;</span> : <span class="s2">&quot;inet[/172.17.8.102:9300]&quot;</span>,
+      <span class="s2">&quot;attributes&quot;</span> : <span class="o">{</span> <span class="o">}</span>
+    <span class="o">}</span>
+  <span class="o">}</span>,
+  <span class="s2">&quot;metadata&quot;</span> : <span class="o">{</span>
+    <span class="s2">&quot;templates&quot;</span> : <span class="o">{</span> <span class="o">}</span>,
+    <span class="s2">&quot;indices&quot;</span> : <span class="o">{</span> <span class="o">}</span>
+  <span class="o">}</span>,
+  <span class="s2">&quot;routing_table&quot;</span> : <span class="o">{</span>
+    <span class="s2">&quot;indices&quot;</span> : <span class="o">{</span> <span class="o">}</span>
+  <span class="o">}</span>,
+  <span class="s2">&quot;routing_nodes&quot;</span> : <span class="o">{</span>
+    <span class="s2">&quot;unassigned&quot;</span> : <span class="o">[</span> <span class="o">]</span>,
+    <span class="s2">&quot;nodes&quot;</span> : <span class="o">{</span>
+      <span class="s2">&quot;oDMLhfaqQPupW-Kx7053Eg&quot;</span> : <span class="o">[</span> <span class="o">]</span>,
+      <span class="s2">&quot;F5mpLliyS5m6Hl5-GI59Sg&quot;</span> : <span class="o">[</span> <span class="o">]</span>,
+      <span class="s2">&quot;fnMFB1wMTZmNiQ96MS3cQw&quot;</span> : <span class="o">[</span> <span class="o">]</span>
+    <span class="o">}</span>
+  <span class="o">}</span>,
+  <span class="s2">&quot;allocations&quot;</span> : <span class="o">[</span> <span class="o">]</span>
+<span class="o">}</span>
+</pre></div>
+<p>Hooray! All three nodes are in the cluster.</p>
+<h2>Conclusion</h2>
+<p>So I think its safe to say that you could easily run an ElasticSearch cluster on CoreOS. However, I wouldn't say this is ready for a production environment quite yet given that CoreOS is still under very heavy development. But this is certainly very promising and feels like a great way to deploy apps and services.</p>
+<p>So what now? Well, ElasticSearch can be used for all sorts of things. One of the most common use cases that I'm familiar with is for log aggregation. This <em>could</em> be enabled by running a <a href="http://logstash.net">Logstash</a> agent and a <a href="https://github.com/progrium/logspout">logspout</a> container on each machine. In fact, I've prototyped this and will write more about this in a later post!</p>
+
+  
+  <div class="comments">
+<div id="disqus_thread"></div>
+<script>
+  var disqus_config = function() { this.page.identifier = "/blog/running-an-elasticsearch-cluster-on-coreos"; };
+  (function() {
+    var d = document, s = d.createElement('script');
+    s.src = '//mattupstate.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+  })();
+</script>
+<noscript>
+  Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript"
+    rel="nofollow">comments powered by Disqus.</a>
+</noscript>
+</div>
+  
+
+  </div>
+
+  <footer class="page-footer blue-grey blue-grey-text text-lighten-4">
+    <div class="container">
+      <div class="row">
+        <div class="col l8 s12">
+          <h5>mattupstate.com</h5>
+          <p>
+            You're visiting the personal website of Matt Wright, a solution oriented and cross-disciplinary technologist with experience in a variety of technical and non-technical domains.
+          </p>
+        </div>
+        <div class="col l2 s6">
+          <h5>Explore</h5>
+          <ul>
+            <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+          </ul>
+        </div>
+        <div class="col l2 s6">
+          <h5>Connect</h5>
+          <ul>
+            <li><a href="https://github.com/mattupstate">GitHub</a></li>
+            <li><a href="https://www.linkedin.com/in/matthewdwright">LinkedIn</a></li>
+            <li><a href="https://twitter.com/mattupstate">Twitter</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright blue-grey darken-2">
+      <div class="container">
+        &copy; Copyright 2016 by Matt Wright.
+      </div>
+    </div>
+  </footer>
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/js/materialize.min.js"></script>
+  <script type="text/javascript" src="../../static/init.js"></script>
+</body>

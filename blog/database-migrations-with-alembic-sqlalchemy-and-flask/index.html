@@ -1,0 +1,156 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="http://fonts.googleapis.com/icon?family=Material+Icons">
+<link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/css/materialize.min.css" media="screen,projection">
+<link type="text/css" rel="stylesheet" href="../../static/monokai.css">
+<link type="text/css" rel="stylesheet" href="../../static/style.css"></script>
+<title>Database Migrations with Alembic, SQLAlchemy and Flask — mattupstate.com</title>
+<body>
+  <header>
+    <nav class="blue-grey darken-2" role="navigation">
+      <div class="nav-wrapper container">
+        <a id="logo-container" href="/" class="brand-logo">Matt Wright</a>
+        <ul class="right hide-on-med-and-down">
+          <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+        </ul>
+
+        <ul id="nav-mobile" class="side-nav">
+          <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+        </ul>
+        <a href="#" data-activates="nav-mobile" class="button-collapse">
+          <i class="material-icons">menu</i>
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <div class="container page page-blog-post">
+    
+  <h1>Database Migrations with Alembic, SQLAlchemy and Flask</h1>
+  <p class="meta grey-text">Published on November 15, 2012</p>
+  <p>Recently I started using <a href="http://alembic.readthedocs.org/">Alembic</a> for managing database migrations for a Flask application at <a href="http://www.chatid.com">work</a>. Alembic is developed and maintained by the maker of SQLAlchemy, thus it was immediately an attractive tool. I've been using it the last month or so and without a doubt I've had a pleasant experience using it so far. In this post I want to share a couple of things that I did with Alembic while developing a Flask app that might prove useful for other developers out there.</p>
+<h3>The Database Connection</h3>
+<p>Alembic, mostly, makes no assumptions about your database connection. Generally speaking, when you initialize Alembic for your project you will use the following command:</p>
+<div class="highlight"><pre><span></span>$ alembic init alembic
+</pre></div>
+<p>The only assumption Alembic makes during this process is that you'll have one place to store your database connection setting. That is in the generated file named <code>alembic.ini</code>. In this file there will be a line that reads:</p>
+<pre><code>sqlalchemy.url = driver://user:pass@localhost/dbname
+</code></pre>
+<p>This is a great place to get started but keeping the database connection setting in this file isn't sustainable for any application that has various environments or differences in connection settings.</p>
+<p>Alembic also creates another file named <code>env.py</code> that is located in the folder named <code>alembic</code>. It is in this file that Alembic creates the SQLAlchemy engine object using the options specified in <code>alembic.ini</code>. This happens in a method called <code>run_migrations_online</code>.</p>
+<p>It is also in this file that you can work some magic so that Alembic will connect to the appropriate database. In my case I was developing a Flask application using the Flask-SQLALchemy extension and the database connection is specified in the application configuration file: <code>myapp/config.py</code>. Given that my configuration file is a plain Python file it was very easy to pass that value to Alembic. The <code>run_migrations_online</code> method of my <code>env.py</code> file now looks like this:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">run_migrations_online</span><span class="p">():</span>
+    <span class="c1"># Override sqlalchemy.url value to application&#39;s value</span>
+    <span class="n">alembic_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_section</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">config_ini_section</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">myapp</span> <span class="kn">import</span> <span class="n">config</span> <span class="k">as</span> <span class="n">app_config</span>
+    <span class="n">alembic_config</span><span class="p">[</span><span class="s1">&#39;sqlalchemy.url&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">app_config</span><span class="o">.</span><span class="n">SQLALCHEMY_DATABASE_URI</span>
+
+    <span class="n">engine</span> <span class="o">=</span> <span class="n">engine_from_config</span><span class="p">(</span>
+                <span class="n">alembic_config</span><span class="p">,</span>
+                <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;sqlalchemy.&#39;</span><span class="p">,</span>
+                <span class="n">poolclass</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">NullPool</span><span class="p">)</span>
+
+    <span class="n">connection</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+    <span class="n">context</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+                <span class="n">connection</span><span class="o">=</span><span class="n">connection</span><span class="p">,</span>
+                <span class="n">target_metadata</span><span class="o">=</span><span class="n">target_metadata</span>
+                <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">context</span><span class="o">.</span><span class="n">begin_transaction</span><span class="p">():</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">run_migrations</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+<p>This file now works in all the application's environments so long as <code>config.py</code> is properly configured.</p>
+<h3>Autogenerating Migrations</h3>
+<p>One handy feature of Alembic is the ability to autogenerate migration files based on your SQLAlchemy models. This feature simply relies on specifying the MetaData object for your models. Given that I was using Flask-SQLAlchemy all I had to do was pass the preconfigured MetaData object to Alembic. This object is accessible on the instance of the Flask-SQLAlchemy extension object which in my app happens to in the <code>myapp.core</code> module.</p>
+<p>Within <code>env.py</code> you'll see a commented out line that may look like the following:</p>
+<div class="highlight"><pre><span></span><span class="c1"># target_metadata = mymodel.Base.metadata</span>
+</pre></div>
+<p>In my case I changed this the following:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">myapp.core</span> <span class="kn">import</span> <span class="n">db</span>
+<span class="n">target_metadata</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">metadata</span>
+</pre></div>
+<p>Now with my properly configured database connection and MetaData object in place I can autogenerate migrations with the following command:</p>
+<div class="highlight"><pre><span></span>$ alembic revision --autogenerate -m <span class="s2">&quot;Added some table&quot;</span>
+</pre></div>
+<p>Just bear in mind that autogenerating migrations isn't the end all be all command. I does not account for everything that can be done during a migration. For instance, if you want to add indexes on particular fields you'll need to write that in yourself. Lastly, if you add anything by hand remember to modify both the <code>upgrade</code> and <code>downgrade</code> methods!</p>
+
+  
+  <div class="comments">
+<div id="disqus_thread"></div>
+<script>
+  var disqus_config = function() { this.page.identifier = "/blog/database-migrations-with-alembic-sqlalchemy-and-flask"; };
+  (function() {
+    var d = document, s = d.createElement('script');
+    s.src = '//mattupstate.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+  })();
+</script>
+<noscript>
+  Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript"
+    rel="nofollow">comments powered by Disqus.</a>
+</noscript>
+</div>
+  
+
+  </div>
+
+  <footer class="page-footer blue-grey blue-grey-text text-lighten-4">
+    <div class="container">
+      <div class="row">
+        <div class="col l8 s12">
+          <h5>mattupstate.com</h5>
+          <p>
+            You're visiting the personal website of Matt Wright, a solution oriented and cross-disciplinary technologist with experience in a variety of technical and non-technical domains.
+          </p>
+        </div>
+        <div class="col l2 s6">
+          <h5>Explore</h5>
+          <ul>
+            <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+          </ul>
+        </div>
+        <div class="col l2 s6">
+          <h5>Connect</h5>
+          <ul>
+            <li><a href="https://github.com/mattupstate">GitHub</a></li>
+            <li><a href="https://www.linkedin.com/in/matthewdwright">LinkedIn</a></li>
+            <li><a href="https://twitter.com/mattupstate">Twitter</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright blue-grey darken-2">
+      <div class="container">
+        &copy; Copyright 2016 by Matt Wright.
+      </div>
+    </div>
+  </footer>
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/js/materialize.min.js"></script>
+  <script type="text/javascript" src="../../static/init.js"></script>
+</body>

@@ -1,0 +1,172 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="http://fonts.googleapis.com/icon?family=Material+Icons">
+<link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/css/materialize.min.css" media="screen,projection">
+<link type="text/css" rel="stylesheet" href="../../static/monokai.css">
+<link type="text/css" rel="stylesheet" href="../../static/style.css"></script>
+<title>Multi Server Flask Application Development Environment with Vagrant and Ansible — mattupstate.com</title>
+<body>
+  <header>
+    <nav class="blue-grey darken-2" role="navigation">
+      <div class="nav-wrapper container">
+        <a id="logo-container" href="/" class="brand-logo">Matt Wright</a>
+        <ul class="right hide-on-med-and-down">
+          <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+        </ul>
+
+        <ul id="nav-mobile" class="side-nav">
+          <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+        </ul>
+        <a href="#" data-activates="nav-mobile" class="button-collapse">
+          <i class="material-icons">menu</i>
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <div class="container page page-blog-post">
+    
+  <h1>Multi Server Flask Application Development Environment with Vagrant and Ansible</h1>
+  <p class="meta grey-text">Published on August 30, 2012</p>
+  <p>I recently discovered <a href="http://vagrantup.com">Vagrant</a> which is a great tool that makes managing and provisioning local virtual machines rather superficial. Additionally, I recently found that there is a project called <a href="https://github.com/dsander/vagrant-ansible">vagrant-ansible</a> that adds support for provisioning VMs with <a href="http://ansible.github.com">Ansible</a>. Ansible is my favorite new system configuration tool, which might be evident in a <a href="http://mattupstate.github.com/python/devops/2012/08/07/flask-wsgi-application-deployment-with-ubuntu-ansible-nginx-supervisor-and-uwsgi.html">previous article</a>. This article is sort of a continuation of that previous article. The main difference being that I've added a database server to the mix to illustrate how one my mimic their staging or production environments on a development machine.</p>
+<h2>Requirements</h2>
+<p>If you plan on following along with this tutorial you will need to install the following software. Please follow the installation instructions provided:</p>
+<ol>
+<li><a href="http://downloads.vagrantup.com/tags/v1.0.3">Vagrant</a></li>
+<li><a href="https://github.com/dsander/vagrant-ansible/blob/master/README.md">vagrant-ansible</a></li>
+<li><a href="http://ansible.github.com/gettingstarted.html">Ansible</a></li>
+</ol>
+<p>Additionally, the source code is available at <a href="https://github.com/mattupstate/vagrant-ansible-tutorial">https://github.com/mattupstate/vagrant-ansible-tutorial</a>. Clone the repository on your machine.</p>
+<h2>The Setup</h2>
+<p>Generally speaking a web application has at least two servers:</p>
+<ol>
+<li>Web server</li>
+<li>Database server</li>
+</ol>
+<p>The web server runs the application code. In this case it runs a <a href="http://flask.pocoo.org">Flask</a> application using Nginx, uWSGI, and Supervisor. However, the web server could hypothetically consist of any sort of stack such as Apache and PHP. The database server hosts the database. In this case it is a PostgreSQL server but it could anything such as MySQL, MongoDB, etc.</p>
+<h3>Vagrantfile</h3>
+<p>The servers are defined in the file named <code>Vagrantfile</code> located at the root of the source code. The contents look like such:</p>
+<div class="highlight"><pre><span></span><span class="nb">require</span> <span class="s1">&#39;vagrant-ansible&#39;</span>
+
+<span class="no">Vagrant</span><span class="o">::</span><span class="no">Config</span><span class="o">.</span><span class="n">run</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+
+  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">define</span> <span class="ss">:web</span> <span class="k">do</span> <span class="o">|</span><span class="n">web_config</span><span class="o">|</span>
+    <span class="n">web_config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span> <span class="o">=</span> <span class="s2">&quot;oneiric32_base&quot;</span>
+    <span class="n">web_config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box_url</span> <span class="o">=</span> <span class="s2">&quot;http://files.travis-ci.org/boxes/bases/oneiric32_base.box&quot;</span>
+    <span class="n">web_config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">forward_port</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">8080</span>
+    <span class="n">web_config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">network</span> <span class="ss">:bridged</span>
+    <span class="n">web_config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">network</span> <span class="ss">:hostonly</span><span class="p">,</span> <span class="s2">&quot;192.168.100.10&quot;</span>
+
+    <span class="n">web_config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provision</span> <span class="ss">:ansible</span> <span class="k">do</span> <span class="o">|</span><span class="n">ansible</span><span class="o">|</span>
+      <span class="n">ansible</span><span class="o">.</span><span class="n">playbook</span> <span class="o">=</span> <span class="s2">&quot;devops/webserver.yml&quot;</span>
+      <span class="n">ansible</span><span class="o">.</span><span class="n">hosts</span> <span class="o">=</span> <span class="s2">&quot;webservers&quot;</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+
+  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">define</span> <span class="ss">:db</span> <span class="k">do</span> <span class="o">|</span><span class="n">db_config</span><span class="o">|</span>
+    <span class="n">db_config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span> <span class="o">=</span> <span class="s2">&quot;oneiric32_base&quot;</span>
+    <span class="n">db_config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box_url</span> <span class="o">=</span> <span class="s2">&quot;http://files.travis-ci.org/boxes/bases/oneiric32_base.box&quot;</span>
+    <span class="n">db_config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">forward_port</span> <span class="mi">5432</span><span class="p">,</span> <span class="mi">54322</span>
+    <span class="n">db_config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">network</span> <span class="ss">:bridged</span>
+    <span class="n">db_config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">network</span> <span class="ss">:hostonly</span><span class="p">,</span> <span class="s2">&quot;192.168.100.20&quot;</span>
+
+    <span class="n">db_config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provision</span> <span class="ss">:ansible</span> <span class="k">do</span> <span class="o">|</span><span class="n">ansible</span><span class="o">|</span>
+      <span class="n">ansible</span><span class="o">.</span><span class="n">playbook</span> <span class="o">=</span> <span class="s2">&quot;devops/dbserver.yml&quot;</span>
+      <span class="n">ansible</span><span class="o">.</span><span class="n">hosts</span> <span class="o">=</span> <span class="s2">&quot;dbservers&quot;</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+
+<span class="k">end</span>
+</pre></div>
+<p>Pretty straight forward. Each server is defined as separate blocks. Within each block the servers are configured with port fowarding and networking information. In this case the servers are configured with both <code>:bridged</code> and <code>:hostonly</code> networking options. Check out the <a href="http://vagrantup.com/v1/docs/index.html">Vagrant documentation</a> for more information regarding networking options. The important part here is to notice the IP address given to the database server: <code>192.168.100.20</code>. This is the address that the application must specify for its database connection.</p>
+<p>Take notice of where Ansible comes in to play. In each server block Vagrant is configured to use Ansible during the provisioning process. A playbook and host group is also specified. Make note that the playbooks' hosts values matches up with the hosts value specified in the server block.</p>
+<h2>Provisioning</h2>
+<p>Given the <code>Vagrantfile</code> and the associated playbooks for each server, provisioning each virtual machine is as easy as running the following command from the root folder of the source code:</p>
+<div class="highlight"><pre><span></span>$ vagrant up web <span class="o">&amp;&amp;</span> vagrant up db
+</pre></div>
+<p>You'll see a lot of activity in the terminal and will be asked what network adapter to attach each server to enable bridged networking. Select whatever you're machine is using at the moment.</p>
+<h2>Application Development</h2>
+<p>Once the servers are running you're free to develop your application! Notice how the application's <a href="https://github.com/mattupstate/vagrant-ansible-tutorial/blob/master/app.py#L6">database URL</a> is configured with the IP address specified in the Vagrant configuration.</p>
+<p>You also, hypothetically, have the same stack as the staging and production environments. You could even deploy the application as you might do in the staging and production environments as well. The example application can be deployed to the webserver using the following command:</p>
+<div class="highlight"><pre><span></span>$ devops/deploy.sh
+</pre></div>
+<p>This will run the deployment playbook against the webserver. Once the playbook has completed its tasks you should be able to go to <a href="http://127.0.0.1:8080">http://127.0.0.1:8080</a> in your browser and see a list of two users.</p>
+<p>If you ask me, that is how easy it should be to setup a development environment!</p>
+
+  
+  <div class="comments">
+<div id="disqus_thread"></div>
+<script>
+  var disqus_config = function() { this.page.identifier = "/blog/multi-server-flask-application-development-enviornment-with-vagrant-and-ansible"; };
+  (function() {
+    var d = document, s = d.createElement('script');
+    s.src = '//mattupstate.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+  })();
+</script>
+<noscript>
+  Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript"
+    rel="nofollow">comments powered by Disqus.</a>
+</noscript>
+</div>
+  
+
+  </div>
+
+  <footer class="page-footer blue-grey blue-grey-text text-lighten-4">
+    <div class="container">
+      <div class="row">
+        <div class="col l8 s12">
+          <h5>mattupstate.com</h5>
+          <p>
+            You're visiting the personal website of Matt Wright, a solution oriented and cross-disciplinary technologist with experience in a variety of technical and non-technical domains.
+          </p>
+        </div>
+        <div class="col l2 s6">
+          <h5>Explore</h5>
+          <ul>
+            <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+          </ul>
+        </div>
+        <div class="col l2 s6">
+          <h5>Connect</h5>
+          <ul>
+            <li><a href="https://github.com/mattupstate">GitHub</a></li>
+            <li><a href="https://www.linkedin.com/in/matthewdwright">LinkedIn</a></li>
+            <li><a href="https://twitter.com/mattupstate">Twitter</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright blue-grey darken-2">
+      <div class="container">
+        &copy; Copyright 2016 by Matt Wright.
+      </div>
+    </div>
+  </footer>
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/js/materialize.min.js"></script>
+  <script type="text/javascript" src="../../static/init.js"></script>
+</body>

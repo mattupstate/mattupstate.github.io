@@ -1,0 +1,295 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="http://fonts.googleapis.com/icon?family=Material+Icons">
+<link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/css/materialize.min.css" media="screen,projection">
+<link type="text/css" rel="stylesheet" href="../../static/monokai.css">
+<link type="text/css" rel="stylesheet" href="../../static/style.css"></script>
+<title>Flask/WSGI Application Deployment with Ubuntu, Ansible, Nginx, Supervisor and uWSGI — mattupstate.com</title>
+<body>
+  <header>
+    <nav class="blue-grey darken-2" role="navigation">
+      <div class="nav-wrapper container">
+        <a id="logo-container" href="/" class="brand-logo">Matt Wright</a>
+        <ul class="right hide-on-med-and-down">
+          <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+        </ul>
+
+        <ul id="nav-mobile" class="side-nav">
+          <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+        </ul>
+        <a href="#" data-activates="nav-mobile" class="button-collapse">
+          <i class="material-icons">menu</i>
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <div class="container page page-blog-post">
+    
+  <h1>Flask/WSGI Application Deployment with Ubuntu, Ansible, Nginx, Supervisor and uWSGI</h1>
+  <p class="meta grey-text">Published on August 7, 2012</p>
+  <p>In this article you will learn how to use <a href="http://ansible.github.com">Ansible</a> to deploy an arbitrary WSGI app, in this case a <a href="http://flask.pocoo.org">Flask</a> app, to an Ubuntu server that runs <a href="http://wiki.nginx.org/">Nginx</a>, <a href="http://projects.unbit.it/uwsgi/">uWSGI</a>, and <a href="http://supervisord.org/">Supervisor</a>. This article assumes you have a basic understanding of Ubuntu, Python web application development and are using git for source control.</p>
+<h2><a id="ansible"></a>Ansible</h2>
+<p>Ansible is a great devops tool. It's truly simply to understand and is easily extended with custom functionality that can be written in nearly any language. If you have not installed Ansible yet, please do by following the instructions on the <a href="http://ansible.github.com/gettingstarted.html">Getting Started</a> page.</p>
+<p>This tutorial will make use of a few modules I contributed to Ansible. They include <code>apt_repository</code>, <code>easy_install</code>, <code>pip</code>, and <code>supervisorctl</code>.</p>
+<h2><a id="server-software"></a>Server Software</h2>
+<p><strong><a href="http://wiki.nginx.org/">Nginx</a></strong></p>
+<p>Nginx is a very fast, lightweight, and popular web server. It will be used as the front end proxy server that ushers the HTTP requests to the Flask application. It will also be used to serve the application's static files to the browser.</p>
+<p><strong><a href="http://projects.unbit.it/uwsgi/">uWSGI</a></strong></p>
+<p>uWSGI is a fast, stable, and full featured application container. It plays very nice with Python and WSGI applications. It will be used to run the Python application process(es) and Nginx, conveniently, supports uWSGI out of the box.</p>
+<p><strong><a href="http://supervisord.org/">Supervisor</a></strong></p>
+<p>Supervisor will be used to manage the uWSGI application container including starting, stoping, and restarting it when necessary. Its also useful for managing other various processes. For instance, you could use it to manage worker processes for a task queue.</p>
+<h2><a id="application"></a>The Flask/WSGI Application</h2>
+<p>It's probably safe to say that if you're developing a Python web app you'll using a WSGI based framework. This article happens to use a very simple Flask application but this deployment method could be applied to any WSGI compatible framework.</p>
+<p>The application that will be used is located at <a href="http://github.com/mattupstate/ansible-tutorial">http://github.com/mattupstate/ansible-tutorial</a>. The repository also contains the Ansible playbooks for this tutorial. Clone the repository if you would like to follow along step by step:</p>
+<pre><code>$ git clone http://github.com/mattupstate/ansible-tutorial
+$ cd ansible-tutorial
+</code></pre>
+<h2><a id="server-setup"></a>Server Setup</h2>
+<p>Before following along with this section of the tutorial you may want to have a server to run the proceeding playbooks against. I've been using a fresh, 64-bit, Ubuntu 11.04 server on Amazon EC2. If you happen to have an Amazon EC2 account you can <a href="https://console.aws.amazon.com/ec2/home?region=us-east-1#launchAmi=ami-699f3600">launch an instance of the same server (ami-699f3600)</a>.</p>
+<p>Create a copy of the <code>devops/hosts.example</code> file and make sure its located at <code>devops/hosts</code>. Replace the current host name with the host name of your Ubuntu server.</p>
+<pre><code>$ sed "s/something.com/&lt;your.host.name&gt;/g" devops/hosts.example &gt;&gt; devops/hosts
+</code></pre>
+<p>With the server/host is defined you can run the <a href="https://github.com/mattupstate/ansible-tutorial/blob/master/devops/setup_server.yml">server_setup.yml</a> playbook against it. Run the following Ansible command:</p>
+<pre><code>$ ansible-playbook devops/setup_server.yml -i devops/hosts
+</code></pre>
+<p>If your server requires a private key to access it via ssh run the previous command but append it with:</p>
+<pre><code>--private-key=&lt;path_to_private_key&gt;
+</code></pre>
+<p>If all goes well all the required software for running your application will be installed and configured.</p>
+<h2><a id="application-deployment"></a>Application Deployment</h2>
+<p>The application will deployed to the server using Ansible's <a href="http://ansible.github.com/modules.html#git">git module</a>. Essentially it will pull the latest code from the repository and checkout the specified version or branch. In the case of this tutorial the <code>HEAD</code> revision of the <code>origin/master</code> branch is being used.</p>
+<p>To deploy the application run the <a href="https://github.com/mattupstate/ansible-tutorial/blob/master/devops/deploy.yml">deploy.yml</a> playbook against the server with the following command (appending the <code>--private-key</code> argument if necessary):</p>
+<pre><code>$ ansible-playbook devops/deploy.yml -i devops/hosts
+</code></pre>
+<p>If all goes well the application should be deployed to the server and if you access the host in your browser you should see <code>Hello World</code> appear in your browser!</p>
+<h2><a id="playbooks-explained"></a>Playbooks Explained</h2>
+<p>This section explains each playbook in detail.</p>
+<h3><a id="server_setup.yml"></a>server_setup.yml</h3>
+<p>The <a href="https://github.com/mattupstate/ansible-tutorial/blob/master/devops/setup_server.yml">server_setup.yml</a> playbook is made specifically for setting up an Ubuntu server to run the application in the manner described above.</p>
+<h4>Configuration</h4>
+<p>At the top of the file you will see the following contents:</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">hosts</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">webservers</span>
+  <span class="l l-Scalar l-Scalar-Plain">user</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ubuntu</span>
+  <span class="l l-Scalar l-Scalar-Plain">sudo</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+<p>This part of the file specifies which host(s) to run the playbook against, which user to run as, and wether or not to use sudo actions. In the case of this tutorial the <code>hosts</code> attribute is set to the <code>webservers</code> group which was defined in the <code>devops/hosts</code> file. Additionall the default user for the newly created server is named <code>ubuntu</code> and all actions are performed as root for simplicity.</p>
+<h4>Tasks</h4>
+<p>After the previous contents you will begin to see task definitions. The first four tasks are as follows:</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">add nginx ppa</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">apt_repository repo=ppa:nginx/stable state=present</span>
+
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">install common packages needed for python application development</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">apt pkg=$item state=installed</span>
+  <span class="l l-Scalar l-Scalar-Plain">with_items</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">libpq-dev</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">libmysqlclient-dev</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">libxml2-dev</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">libjpeg62</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">libjpeg62-dev</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">libfreetype6</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">libfreetype6-dev</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">zlib1g-dev</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mysql-client</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">python-dev</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">python-setuptools</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">python-imaging</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">python-mysqldb</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">python-psycopg2</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">git-core</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">nginx</span>
+
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">install pip</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">easy_install name=pip</span>
+
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">install various libraries with pip</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">pip name=$item state=present</span>
+  <span class="l l-Scalar l-Scalar-Plain">with_items</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">virtualenv</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">supervisor</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">uwsgi</span>
+</pre></div>
+<p>These tasks install the various pieces of software necessary for running the application. Notice the use of the custom Ansible modules <code>apt_repository</code>, <code>easy_install</code>, and <code>pip</code>. These are available in my <a href="https://github.com/mattupstate/ansible">Ansible fork</a>.</p>
+<p>Following this are some housekeeping tasks:</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">symlink imaging library files</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">file src=/usr/lib/x86_64-linux-gnu/libfreetype.so dest=/usr/lib/libfreetype.so state=link</span>
+
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">symlink imaging library files</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">file src=/usr/lib/x86_64-linux-gnu/libz.so dest=/usr/lib/libz.so state=link</span>
+
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">symlink imaging library files</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">file src=/usr/lib/x86_64-linux-gnu/libjpeg.so.62 dest=/usr/lib/x86_64-linux-gnu/libjpeg.so state=link</span>
+
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">symlink imaging library files</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">file src=/usr/lib/x86_64-linux-gnu/libjpeg.so dest=/usr/lib/libjpeg.so state=link</span>
+</pre></div>
+<p>These tasks ensure that a few files are able to be found during the build process of PIL, Python's imaging library.</p>
+<p>Following this are some tasks related to <strong>Nginx</strong>:</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">remove default nginx site</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">file path=/etc/nginx/sites-enabled/default state=absent</span>
+
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">write nginx.conf</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">template src=templates/nginx.conf dest=/etc/nginx/nginx.conf</span>
+</pre></div>
+<p>With these tasks the default Nginx site is removed and a new Nginx configuration file is created from the <a href="https://github.com/mattupstate/ansible-tutorial/blob/master/devops/templates/nginx.conf">custom template</a>.</p>
+<p>Following this are some tasks related to <strong>Supervisor</strong>:</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">create supervisord config folder</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">file dest=/etc/supervisor state=directory owner=root</span>
+
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">create supervisord config</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">template src=templates/supervisord.conf dest=/etc/supervisord.conf</span>
+
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">create supervisord init script</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">template src=templates/supervisord.sh dest=/etc/init.d/supervisord mode=0755</span>
+
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">start supervisord service and have it run during system startup</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">service name=supervisord state=started enabled=yes</span>
+</pre></div>
+<p>The first task creates a directory to contain various program configurations. Following this a Supervisor configuration file is created from the <a href="https://github.com/mattupstate/ansible-tutorial/blob/master/devops/templates/supervisord.conf">custom template</a> which will load all files located in the aforementioned directory. The third and fourth tasks setup Supervisor to run as a service and run when the system starts up.</p>
+<p>And finally the last task:</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">create webapps directory</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">file dest=/srv/webapps state=directory</span>
+</pre></div>
+<p>This task simply creates a directory to hold all the server's web applications.</p>
+<h3><a id="deploy.yml"></a>deploy.yml</h3>
+<p>The <a href="https://github.com/mattupstate/ansible-tutorial/blob/master/devops/deploy.yml">deploy.yml</a> playbook is made specifically for the previous server setup.</p>
+<h4>Configuration</h4>
+<p>Just as with the <code>server_setup.yml</code> playbook, you'll see the same contents at the top of the file specifying the host(s) and user.</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">hosts</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">webservers</span>
+  <span class="l l-Scalar l-Scalar-Plain">user</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ubuntu</span>
+  <span class="l l-Scalar l-Scalar-Plain">sudo</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+<p>Following this are some variable definitions:</p>
+<div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">vars</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">app_name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">hello_flask</span>
+  <span class="l l-Scalar l-Scalar-Plain">repo_url</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">https://github.com/mattupstate/ansible-tutorial.git</span>
+  <span class="l l-Scalar l-Scalar-Plain">repo_remote</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">origin</span>
+  <span class="l l-Scalar l-Scalar-Plain">repo_version</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">master</span>
+  <span class="l l-Scalar l-Scalar-Plain">webapps_dir</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">/srv/webapps</span>
+  <span class="l l-Scalar l-Scalar-Plain">wsgi_file</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">wsgi.py</span>
+  <span class="l l-Scalar l-Scalar-Plain">wsgi_callable</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">app</span>
+</pre></div>
+<p>These variables are used throughout the playbook and are also used when writing templates to the server.</p>
+<h4>Tasks</h4>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ensure log directory</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">file dest=${webapps_dir}/${app_name}/log state=directory</span>
+</pre></div>
+<p>This ensures the log directory is in place.</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">deploy code from repository</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">git repo=$repo_url dest=${webapps_dir}/${app_name}/src remote=$repo_remote version=$repo_version</span>
+</pre></div>
+<p>This task retrieves the source code form the remote git repository and checks out the specified version/branch, in this case the <code>HEAD</code> revision of the <code>master</code> branch. Notice the usage of the variables defined before.</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">install dependencies into virtualenv</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">pip requirements=${webapps_dir}/${app_name}/src/requirements.txt virtualenv=${webapps_dir}/${app_name}/venv state=present</span>
+</pre></div>
+<p>This tasks installs the application's dependencies into the specified vitualenv using pip and the applicaiton's <code>requirements.txt</code> file.</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">create supervisor program config</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">template src=templates/supervisor.ini dest=/etc/supervisor/${app_name}.ini</span>
+  <span class="l l-Scalar l-Scalar-Plain">notify</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">restart app</span>
+</pre></div>
+<p>This task creates or updates the application's Supervisor program configuration from a <a href="https://github.com/mattupstate/ansible-tutorial/blob/master/devops/templates/supervisor.ini">custom template</a>. If you look at the contents of the template you will see the previous defined variables being used. Additionally, this task defines a <code>notify</code> action. This means that if the configuration file changes at all, Ansible will run the <code>restart app</code> handler which is defined later on in the playbook.</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">create nginx site config</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">template src=templates/nginx_site.conf dest=/etc/nginx/sites-available/${app_name}.conf</span>
+  <span class="l l-Scalar l-Scalar-Plain">notify</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">restart nginx</span>
+
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">link nginx config</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">file src=/etc/nginx/sites-available/${app_name}.conf dest=/etc/nginx/sites-enabled/${app_name}.conf state=link</span>
+</pre></div>
+<p>These tasks creates or updates the applicatin's Nginx configuration from a <a href="https://github.com/mattupstate/ansible-tutorial/blob/master/devops/templates/nginx_site.conf">custom template</a> and ensures a symlink exists in the Nginx <code>sites-enabled</code> directory. This task also defines a <code>notify</code> action and in this case, if the configuration changes at all, Nginx will be restarted.</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">start app</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">supervisorctl name=${app_name} state=started</span>
+</pre></div>
+<p>And lastly, this task ensures the application is running, if it is running already nothing will be affected.</p>
+<p>This task ensures the symlink for the Nginx configuration</p>
+<h4>Handlers</h4>
+<p>Some of the previous tasks use Ansible's <code>notify</code> action. In the case those tasks make a change on the server Ansible will run a handler with the given name. The following are the handlers:</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">restart app</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">supervisorctl name=${app_name} state=restarted</span>
+</pre></div>
+<p>This handler will ensure the application is restarted via supervisorctl so long as it is already running.</p>
+<div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">restart nginx</span>
+  <span class="l l-Scalar l-Scalar-Plain">action</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">service name=nginx state=restarted</span>
+</pre></div>
+<p>This handler will ensure Nginx is restarted so long as it is already running.</p>
+<h2><a id="notes"></a>Notes</h2>
+<p>At the time of writing this tutorial there was a small problem with the Nginx PPA and the init script that was packaged with it. Luckily a <a href="https://bugs.launchpad.net/nginx/+bug/1033856">bug was filed</a> at Launchpad so I figured out what was going on. If you experience this problem simply replace the contents of the <code>/etc/init.d/nginx</code> file with this <a href="https://launchpadlibrarian.net/112190683/nginx.txt">alternative init script</a>.</p>
+
+  
+  <div class="comments">
+<div id="disqus_thread"></div>
+<script>
+  var disqus_config = function() { this.page.identifier = "/blog/flask-wsgi-application-deployment-with-ubuntu-ansible-nginx-supervisor-and-uwsgi"; };
+  (function() {
+    var d = document, s = d.createElement('script');
+    s.src = '//mattupstate.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+  })();
+</script>
+<noscript>
+  Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript"
+    rel="nofollow">comments powered by Disqus.</a>
+</noscript>
+</div>
+  
+
+  </div>
+
+  <footer class="page-footer blue-grey blue-grey-text text-lighten-4">
+    <div class="container">
+      <div class="row">
+        <div class="col l8 s12">
+          <h5>mattupstate.com</h5>
+          <p>
+            You're visiting the personal website of Matt Wright, a solution oriented and cross-disciplinary technologist with experience in a variety of technical and non-technical domains.
+          </p>
+        </div>
+        <div class="col l2 s6">
+          <h5>Explore</h5>
+          <ul>
+            <li><a href="../../">Welcome</a></li>
+            
+              <li class="active"><a href="../../blog/">Blog</a></li>
+            
+              <li><a href="../../presentations/">Presentations</a></li>
+            
+              <li><a href="../../about/">About</a></li>
+            
+          </ul>
+        </div>
+        <div class="col l2 s6">
+          <h5>Connect</h5>
+          <ul>
+            <li><a href="https://github.com/mattupstate">GitHub</a></li>
+            <li><a href="https://www.linkedin.com/in/matthewdwright">LinkedIn</a></li>
+            <li><a href="https://twitter.com/mattupstate">Twitter</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright blue-grey darken-2">
+      <div class="container">
+        &copy; Copyright 2016 by Matt Wright.
+      </div>
+    </div>
+  </footer>
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/js/materialize.min.js"></script>
+  <script type="text/javascript" src="../../static/init.js"></script>
+</body>

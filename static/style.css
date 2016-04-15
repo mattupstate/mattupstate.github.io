@@ -1,0 +1,101 @@
+footer.page-footer {
+  margin-top: 50px;
+}
+
+.page-footer a {
+  color: #FFFFFF;
+}
+
+.page-footer a:hover {
+  color: #FFC107;
+  // text-decoration: underline;
+}
+
+.content {
+  font-size: 16px;
+}
+
+.page-page .excerpt, .page-about .excerpt {
+  font-size: 18px;
+  min-height: 225px;
+}
+
+.page-about h4 {
+  font-size: 2rem;
+}
+
+.page-about h5 {
+  font-size: 1.5rem;
+}
+
+.page-about .chip {
+  margin-bottom: 5px;
+}
+
+.page-presentations h5, .page-blog h5 {
+  margin: 25px 0 5px;
+}
+
+.page-presentations p, .page-blog p {
+  margin: 5px 0;
+}
+
+.page-presentations a:hover, .page-blog a:hover {
+  color: #0277bd;
+}
+
+.page-presentation h1, .page-blog-post h1 {
+  font-size: 3rem;
+  margin-bottom: 5px;
+}
+
+.page-presentation h2, .page-blog-post h2 {
+  font-size: 2.25rem;
+}
+
+.page-presentation h3, .page-blog-post h3 {
+  font-size: 1.7rem;
+  font-weight: 500;
+}
+
+.page-blog-post h4 {
+  font-size: 1.4rem;
+}
+
+.page-blog-post h5 {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.page-blog-post ul {
+  margin: 0 0 0 20px;
+}
+
+.page-blog-post ul, .page-blog-post li {
+  list-style-type: disc;
+}
+
+.page-blog-post .meta {
+  font-style: italic;
+}
+
+.page-blog-post .comments {
+  margin-top: 50px;
+}
+
+.pagination {
+  margin: 20px 0;
+  text-align: center;
+}
+
+pre {
+  padding: 10px;
+}
+
+.page-presentation .video {
+  margin: 30px 0;
+}
+
+.page-presentation .slides {
+  margin: 30px 0;
+}
