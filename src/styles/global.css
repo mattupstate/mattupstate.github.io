@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    h1 {
+        @apply text-2xl;
+    }
+    h2 {
+        @apply text-xl mb-2;
+    }
+    h3 {
+        @apply text-lg;
+    }
+    h4 {
+        @apply text-base;
+    }
+    h5 {
+        @apply text-xs font-bold text-gray-600;
+    }
+
+    p {
+        @apply text-sm mb-4;
+    }
+
+    blockquote {
+        @apply italic bg-gray-50 text-gray-500;
+    }
+    
+}
+
+.navbar {
+    position: sticky;
+    top: 0px;
+}
+
+.blog-post a {
+    @apply text-blue-600 underline;
+}
+
+.blog-post ul {
+    @apply list-disc list-inside text-sm ml-3 mb-4;
+}
+
+.blog-links a {
+    @apply text-blue-600 underline;
+}
+
+.work ul {
+    @apply list-disc list-outside text-xs ml-4 mb-4;
+}
+
+.employment p {
+    @apply text-xs;
+}
+
+.work h3 {
+    @apply font-medium;
+}
+
+.work h4 {
+    @apply mb-1;
+}
+
+.talks a {
+    @apply text-blue-600 underline;
+}
+
+.talk-item {
+    @apply mb-8;
+}
+
+.employment-duration {
+    @apply text-gray-400 text-sm ml-1;
+}
+
+.open-source a {
+    @apply text-blue-600 underline;
+}
+
+.etc a {
+    @apply text-blue-600 underline;
+}
+
+.etc ul {
+    @apply list-disc list-inside text-sm ml-3 mb-4;
+}
