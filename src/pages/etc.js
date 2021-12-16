@@ -44,7 +44,7 @@ const EtcPage = ({
             </ul>
           </div>
           <div class="sm:w-2/5">
-            <StaticImage src="../images/headshot-lg.jpg" class="float-right border-2" alt="Headshot of Matt"/>  
+            <StaticImage src="../images/headshot-lg.jpg" class="border-2" alt="Headshot of Matt"/>  
           </div>
         </div>
       </div>
