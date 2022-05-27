@@ -33,7 +33,7 @@
     "netlify-cms-app": "^2.15.54",
     "postcss": "^8.3.11",
     "prism-solarized-dark": "^1.0.1",
-    "prismjs": "^1.25.0",
+    "prismjs": "^1.27.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-helmet": "^6.1.0",
