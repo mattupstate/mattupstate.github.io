@@ -23,7 +23,7 @@ const EtcPage = ({
           <div class="sm:w-3/5 pr-8">
             <h2>Bio</h2>
             <p>
-              Matt loves design and technology. 
+              Matt loves design and technology.
               Early in his career he aimed to be a designer after receiving a BFA in Graphic Design from <OutboundLink href="https://rit.edu">Rochester Institute of Technology</OutboundLink>.
               However, his early interest in computers led him to eventually become more technology focused over the course of his 20+ year career.
               From 2005-2012, Matt developed web and mobile content for the likes of Virgin America, Elektra Records, Umbro, 2K Games, Speedo and the Cleveland Museum of Art.
@@ -31,11 +31,12 @@ const EtcPage = ({
               It wasn't long before Matt was contributing to projects and authoring some of his own.
               Most recently Matt has been focused on developing team management, organization design, and leadership skills to help round out his skillset.
               Interested in working with Matt? <a href="mailto:hello@mattupstate.com">Say hello</a>!
-            </p>            
+            </p>
             <h2 class="mb-3">Social</h2>
             <ul class="social">
               <li><a href="mailto:hello@mattupstate.com">Email</a></li>
               <li><OutboundLink href="https://github.com/mattupstate">GitHub</OutboundLink></li>
+              <li><a href="https://mastodon.social/@mattupstate" rel="me">Mastodon</a></li>
               <li><OutboundLink href="https://twitter.com/mattupstate">Twitter</OutboundLink></li>
               <li><OutboundLink href="https://www.linkedin.com/in/matthewdwright">LinkedIn</OutboundLink></li>
               <li><OutboundLink href="https://keybase.io/mattupstate">Keybase</OutboundLink></li>
@@ -44,7 +45,7 @@ const EtcPage = ({
             </ul>
           </div>
           <div class="sm:w-2/5">
-            <StaticImage src="../images/headshot-lg.jpg" class="border-2" alt="Headshot of Matt"/>  
+            <StaticImage src="../images/headshot-lg.jpg" class="border-2" alt="Headshot of Matt"/>
           </div>
         </div>
       </div>
