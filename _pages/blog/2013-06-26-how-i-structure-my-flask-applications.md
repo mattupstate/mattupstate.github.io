@@ -2,6 +2,8 @@
 slug: /blog/how-i-structure-my-flask-applications
 title: How I Structure My Flask Applications
 date: 2013-06-26
+redirect_from:
+  - /python/2013/06/26/how-i-structure-my-flask-applications.html
 ---
 
 This post was [featured on HackerNews](https://news.ycombinator.com/item?id=5948893).
