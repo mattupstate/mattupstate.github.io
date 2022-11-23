@@ -8,10 +8,10 @@ module.exports = {
     siteUrl: "https://mattupstate.com"
   },
   plugins: [
-    "gatsby-plugin-netlify-cms", 
+    "gatsby-plugin-image",
+    "gatsby-plugin-netlify-cms",
     "gatsby-plugin-postcss",
     "gatsby-plugin-react-helmet",
-    "gatsby-plugin-image",
     "gatsby-plugin-sharp",
     "gatsby-transformer-sharp",
     {
