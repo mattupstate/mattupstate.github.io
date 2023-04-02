@@ -18,7 +18,7 @@
   "devDependencies": {
     "autoprefixer": "^10.3.7",
     "gatsby": "^4.0.0",
-    "gatsby-plugin-google-analytics": "^4.4.0",
+    "gatsby-plugin-google-gtag": "^4.0.0",
     "gatsby-plugin-image": "^2.4.0",
     "gatsby-plugin-netlify-cms": "^6.0.0",
     "gatsby-plugin-postcss": "^5.0.0",
