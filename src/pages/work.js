@@ -21,8 +21,16 @@ const WorkPage = ({
         <div class="flex flex-wrap justify-start">
           <div class="employment sm:w-3/5">
             <h2 class="mb-3">Employment</h2>
+            <h3>Engineering Director, Backend & DevOps</h3>
+            <h4>Noteable.io <span class="employment-duration">March 2022 - Present</span></h4>
+            <ul>
+              <li>Coach autonomous, self driven engineering teams</li>
+              <li>Support engineer growth and development</li>
+              <li>Drive system observability improvements</li>
+              <li>Provide developer tools and improved experiences</li>
+            </ul>
             <h3>Engineering Director, Core Platform</h3>
-            <h4>Quartet Health <span class="employment-duration">Oct 2018 - Present</span></h4>
+            <h4>Quartet Health <span class="employment-duration">Oct 2018 - March 2022</span></h4>
             <ul>
               <li>Integration API product design and development</li>
               <li>Internal API design and project management </li>
