@@ -16,7 +16,7 @@
         @apply text-base;
     }
     h5 {
-        @apply text-xs font-bold text-gray-600;
+        @apply text-base font-bold text-gray-600;
     }
 
     p {
@@ -25,8 +25,22 @@
 
     blockquote {
         @apply italic bg-gray-50 text-gray-500;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 3px solid gray;
     }
-    
+}
+
+blockquote > p {
+    margin-bottom: 0;
+}
+
+code[class="language-text"] {
+    @apply text-xs;
+}
+
+pre[class="language-text"] {
+    @apply text-xs;
 }
 
 .navbar {
