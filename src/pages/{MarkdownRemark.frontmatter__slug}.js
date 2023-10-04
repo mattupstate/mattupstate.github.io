@@ -39,7 +39,7 @@ export const pageQuery = graphql`
         description
       }
     }
-    metaImageFile: file(relativePath: { eq: "images/headshot-summary.jpg" }) {
+    metaImageFile: file(relativePath: { eq: "images/headshot-summary.png" }) {
       relativePath
       childImageSharp {
         gatsbyImageData

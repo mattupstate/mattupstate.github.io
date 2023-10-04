@@ -126,7 +126,7 @@ export default WorkPage
 
 export const pageQuery = graphql`
   query {
-    metaImageFile: file(relativePath: { eq: "images/headshot-summary.jpg" }) {
+    metaImageFile: file(relativePath: { eq: "images/headshot-summary.png" }) {
       relativePath
       childImageSharp {
         gatsbyImageData
