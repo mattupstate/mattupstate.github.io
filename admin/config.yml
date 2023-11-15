@@ -1,0 +1,26 @@
+media_folder: static/
+public_folder: /static/images
+publish_mode: editorial_workflow
+backend: 
+  name: github
+  repo: mattupstate/mattupstate.com-gatsby
+  branch: main
+collections: 
+  - name: "blog"
+    label: "Blog"
+    folder: "_pages/blog"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - label: Slug
+        name: slug
+        widget: string
+      - label: Title
+        name: title
+        widget: string
+      - label: Publish Date
+        name: date
+        widget: datetime
+      - label: Body
+        name: body
+        widget: markdown
