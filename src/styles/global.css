@@ -88,7 +88,7 @@ pre[class="language-text"] {
     @apply text-gray-400 text-sm ml-1;
 }
 
-.open-source a {
+.work a {
     @apply text-blue-600 underline;
 }
 
