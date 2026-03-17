@@ -22,6 +22,16 @@ const WorkPage = ({
           <div class="employment sm:w-3/5">
             <h2 class="mb-3">Employment</h2>
             <h3>Engineering Manager</h3>
+            <h4>Help Scout <span class="employment-duration">Aug 2024 - Mar 2026</span></h4>
+            <ul>
+              <li>Manager of six infrastructure engineers. Owned the experience of developing, testing, deploying and operating software for 40+ product-driven engineers</li>
+              <li>Supported improvements to all DORA metrics by partnering with product teams to optimize CI workloads, afford self-service provisioning, improve observability, and eliminate operational dependencies</li>
+              <li>Migrated all candidate workloads to AWS EKS, improving workload security, performance and reducing operational costs without compromising on deployment frequency or lead time</li>
+              <li>Partnered with CISO to meet all SOC2 and HIPAA compliance measures. Facilitated third-party pen-test scope and remediation. Automated AWS onboarding of all staff through AWS Identity Center and introduced policy-as-code</li>
+              <li>Drove AI adoption for Day 2 operations including drift+compliance, incident ops, security, and cost optimization</li>
+              <li>Regular rotations in on-call, incident response and customer support</li>
+            </ul> 
+            <h3>Engineering Manager</h3>
             <h4>Noteable.io <span class="employment-duration">Mar 2022 - Dec 2023 (end of operations)</span></h4>
             <ul>
               <li>Managed 8 backend engineers and 4 platform engineers</li>
@@ -83,11 +93,12 @@ const WorkPage = ({
           <div class="open-source sm:w-2/5">
             <h2>Tools &amp; Tech</h2>
             <ul>
+              <li>Kubernetes, ArgoCD, Argo Workflows, Karpenter, Istio, KEDA</li>
+              <li>Crossplane, ACK, kro, Kustomize, Helm</li>
               <li>Python, Kotlin, Java, Typescript</li>
               <li>Flask, FastAPI, Ktor, Spring Boot</li>
               <li>PostgreSQL, ElasticSearch, Redis</li>
               <li>SQLAlchemy, Alembic, jOOQ, Liquibase</li>
-              <li>Terraform, Packer, Ansible, Docker, Helm, Skaffold, Kubernetes, AWS</li>
               <li>DataDog, OpenTelemetry, Sentry</li>
               <li>Selenium, Playwright</li>
               <li>DDD, Event Modeling, CQRS</li>
